@@ -60,6 +60,7 @@ export class Game {
   async start(mode = this.mode) {
     this.mode = mode;
     localStorage.setItem('birdrun.mode', mode);
+    document.activeElement?.blur?.(); // évite qu'Espace « reclique » le bouton du menu
     if (getControl() === 'tilt') {
       const ok = await enableTilt(); // ne redemande rien si déjà autorisé pendant ce lancement
       hud.setHint(ok ? '' : 'Inclinaison refusée : touche la gauche / droite de l’écran.');

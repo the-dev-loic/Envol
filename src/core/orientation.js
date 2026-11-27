@@ -5,7 +5,9 @@
 // Ailleurs (Android…), on tente aussi le vrai verrouillage.
 
 const app = document.getElementById('app');
-let forced = false;   // true = écran en portrait, jeu tourné de 90° pour rester en paysage
+let forced = false;
+// Sur ordinateur (souris), on ne tourne jamais l'affichage, même si la fenêtre est plus haute que large.
+export const isTouchDevice = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;   // true = écran en portrait, jeu tourné de 90° pour rester en paysage
 
 /** Angle de rotation de l'écran : 0, 90 ou -90. */
 function screenAngle() {
@@ -34,7 +36,7 @@ export function isForced() {
 
 export function applyLandscape() {
   const w = window.innerWidth, h = window.innerHeight;
-  forced = h > w;
+  forced = isTouchDevice && h > w;
   if (forced) {
     // Le haut du jeu se retrouve sur le bord gauche du téléphone (comme un paysage "classique").
     app.style.width = `${h}px`;

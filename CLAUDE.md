@@ -17,7 +17,8 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 - PWA : `manifest.webmanifest` + `sw.js` → installable via Safari « Sur l'écran d'accueil » et **jouable sans connexion** (tous les fichiers pré-téléchargés ; réseau d'abord avec délai de 2,5 s, sinon cache).
 - ⚠️ **Avant chaque commit : `python3 tools/update-sw.py`** (régénère la liste des fichiers hors connexion + la version du cache). Sans ça, un nouveau fichier ne marche pas hors ligne.
 - Hébergement : n'importe quel serveur statique **HTTPS** (requis par iOS pour l'inclinaison). Ex. GitHub Pages.
-- Test local : `python3 -m http.server` puis ouvrir `http://localhost:8000` (flèches ←/→ ou Q/D pour diriger).
+- **Jouable sur ordinateur** : ← → (ou Q/D) pour diriger, Entrée/Espace pour jouer/rejouer, Échap pour le menu (géré dans `main.js`). Sur ordinateur (`isTouchDevice` faux) : pas de rotation forcée, réglages d'inclinaison masqués (classe `body.desktop`).
+- Test local : `python3 -m http.server` puis ouvrir `http://localhost:8000`.
 
 ## Carte des fichiers (1 responsabilité par fichier)
 | Fichier | Rôle | Toucher pour… |

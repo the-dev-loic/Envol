@@ -53,6 +53,8 @@ button.mode[data-best]:not([data-best=""])::after {
 #themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; width: min(100%, 720px); }
 .row { display: flex; gap: 12px; }
 .version { opacity: .6; }
+/* Ordinateur : pas de réglages d'inclinaison ni d'astuce d'installation */
+.desktop #control, .desktop #invert, .desktop .install { display: none; }
 button.mode.small { min-width: 0; font-size: 13px; font-weight: 600; padding: 6px 14px; background: transparent; }
 #themes button.mode { min-width: 0; font-size: 15px; padding: 10px 12px; }
 
