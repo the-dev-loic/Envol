@@ -2,6 +2,9 @@
 
 **À lire en premier. Ne relire le code que des fichiers concernés par la tâche.**
 
+- Code : https://github.com/the-dev-loic/Envol (branche `main`) — cloner ce dépôt en début de session.
+- Jeu en ligne : https://the-dev-loic.github.io/Envol/ (GitHub Pages, publié à chaque push sur `main`).
+
 ## Le jeu
 Oiseau à la 1re personne, avance tout seul vers l'avant, de plus en plus vite, monde infini.
 On va à gauche/droite en inclinant le téléphone. Collision avec un obstacle = fin. Score = distance (m).
