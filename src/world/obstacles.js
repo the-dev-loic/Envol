@@ -1,25 +1,41 @@
-// Briques réutilisables par les thèmes pour poser décor et obstacles.
-// Toutes reçoivent le "ctx" fourni par World.populate (voir CLAUDE.md, contrat d'un thème).
+// Briques réutilisables par les thèmes pour poser décor et obstacles dans une CASE du monde ouvert.
+// Toutes reçoivent le "ctx" fourni par World (voir CLAUDE.md, contrat d'un thème).
+// Coordonnées locales à la case : x ∈ [-width/2, width/2], z ∈ [-length, 0].
 import { CONFIG } from '../config.js';
+import { createRng } from '../core/rng.js';
 
-/** Centre du couloir sûr à une distance donnée (z "global", positif vers l'avant). */
+let phase = [0, 0];
+
+/** Change le tracé du chemin sûr (appelé à chaque nouvelle partie avec une graine aléatoire). */
+export function setLaneSeed(seed) {
+  const r = createRng(seed);
+  phase = [r.range(0, Math.PI * 2), r.range(0, Math.PI * 2)];
+}
+
+/** Position X (MONDE) du chemin sûr à une distance donnée. */
 export function safeX(distance) {
   const { amplitude, wavelength } = CONFIG.safeLane;
   const k = (Math.PI * 2) / wavelength;
-  // Deux sinusoïdes pour un tracé moins prévisible, pente toujours franchissable.
-  return amplitude * (0.75 * Math.sin(distance * k) + 0.25 * Math.sin(distance * k * 2.3 + 1.7));
+  // Deux sinusoïdes, décalées selon la graine : tracé différent à chaque partie,
+  // pente toujours rattrapable par l'oiseau.
+  return amplitude * (0.75 * Math.sin(distance * k + phase[0]) + 0.25 * Math.sin(distance * k * 2.3 + phase[1]));
 }
 
-/** Une position est-elle libre pour un obstacle fixe de rayon r (hors couloir sûr) ? */
+/** Position X (LOCALE à la case) du chemin sûr à la profondeur z de la case. */
+export function laneX(ctx, z) {
+  return safeX(ctx.distanceAt(z)) - ctx.offsetX;
+}
+
+/** Le chemin sûr traverse-t-il cette case à la profondeur z ? */
+export function laneInTile(ctx, z, margin = 0) {
+  return Math.abs(laneX(ctx, z)) < ctx.width / 2 - margin;
+}
+
+/** Une position est-elle libre pour un obstacle fixe de rayon r (hors chemin sûr) ? */
 export function isFree(ctx, x, z, r) {
   const { halfWidthEasy, halfWidthHard } = CONFIG.safeLane;
-  const lane = halfWidthEasy + (halfWidthHard - halfWidthEasy) * ctx.difficulty;
-  return Math.abs(x - safeX(ctx.distanceAt(z))) > lane + r;
-}
-
-/** Sol du tronçon (géométrie partagée). */
-export function ground(ctx, material) {
-  ctx.group.add(new ctx.THREE.Mesh(ctx.shared.ground, material));
+  const lane = halfWidthEasy + (halfWidthHard - halfWidthEasy) * ctx.difficulty + ctx.laneMargin;
+  return Math.abs(x - laneX(ctx, z)) > lane + r;
 }
 
 /**
@@ -44,39 +60,40 @@ export function instances(ctx, geometry, material, items) {
   return mesh;
 }
 
-/** Points aléatoires dans le couloir, hors couloir sûr. */
+/** Ajuste une quantité donnée pour une case de 100 m à la largeur réelle de la case. */
+export function density(ctx, count) {
+  const n = count * ctx.width / 100;
+  return Math.floor(n) + (ctx.rng.next() < n % 1 ? 1 : 0);
+}
+
+/** Points aléatoires dans la case, hors chemin sûr (et hors zones réservées par le thème). */
 export function scatter(ctx, count, radius) {
+  count = density(ctx, count);
   const out = [];
-  const hw = ctx.halfWidth - 1;
+  const hw = ctx.width / 2;
   for (let tries = 0; out.length < count && tries < count * 6; tries++) {
     const x = ctx.rng.range(-hw, hw);
-    const z = -ctx.rng.range(2, ctx.length - 2);
-    if (isFree(ctx, x, z, radius)) out.push({ x, z });
-  }
-  return out;
-}
-
-/** Positions X d'un mur en travers du couloir, avec un trou centré sur le couloir sûr. */
-export function wallWithGap(ctx, z, spacing) {
-  const xs = [];
-  for (let x = -ctx.halfWidth + spacing / 2; x < ctx.halfWidth; x += spacing) {
-    if (isFree(ctx, x, z, spacing * 0.45)) xs.push(x);
-  }
-  return xs;
-}
-
-/** Décor de bord (hors zone jouable), des deux côtés. */
-export function borders(ctx, count, minOut, maxOut) {
-  const out = [];
-  for (let i = 0; i < count; i++) {
-    const side = i % 2 ? 1 : -1;
-    out.push({ x: side * ctx.rng.range(ctx.halfWidth + minOut, ctx.halfWidth + maxOut), z: -ctx.rng.range(0, ctx.length) });
+    const z = -ctx.rng.range(1, ctx.length - 1);
+    if (isFree(ctx, x, z, radius) && ctx.isClear(x, z, radius)) out.push({ x, z });
   }
   return out;
 }
 
 /**
- * Obstacle mobile : un objet qui va et vient latéralement (il peut croiser le couloir sûr,
+ * Rangée d'obstacles en travers du chemin sûr, avec un seul passage (le chemin).
+ * Renvoie les positions X locales. À n'appeler que si laneInTile(ctx, z).
+ */
+export function wallWithGap(ctx, z, spacing, halfLength = 24) {
+  const c = laneX(ctx, z);
+  const xs = [];
+  for (let x = c - halfLength; x <= c + halfLength; x += spacing) {
+    if (isFree(ctx, x, z, spacing * 0.45)) xs.push(x);
+  }
+  return xs;
+}
+
+/**
+ * Obstacle mobile : un objet qui va et vient latéralement (il peut croiser le chemin sûr,
  * c'est voulu : il faut viser le bon moment).
  */
 export function mover(ctx, object, { x, z, r, amplitude, speed }) {

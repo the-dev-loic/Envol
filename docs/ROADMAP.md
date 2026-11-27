@@ -19,6 +19,7 @@
 - v0.4 : autorisation des mouvements demandée une seule fois par lancement (au 1er toucher) + choix mémorisé « Commandes : inclinaison / toucher »
 - v0.5 : ville refaite (façades à fenêtres éclairées, boulevard, panneaux, arbres), monde Campagne (granges à traverser, moulins, silos, meules, animaux, champs), jeu jouable sans connexion
 - v0.6 : sol texturé + détails (herbe, fleurs, cailloux, cactus…), ciel en dégradé avec soleil/lune/étoiles, cycle jour/nuit, météo (brouillard, pluie, neige)
+- v0.7 : monde ouvert sans mur (grille de cases infinie à gauche/droite), monde différent à chaque partie, ville en quadrillage d'avenues
 
 ## Idées suivantes (suite)
 1. Bouton « recalibrer » + réglage de sensibilité dans le menu (le choix des commandes existe déjà)

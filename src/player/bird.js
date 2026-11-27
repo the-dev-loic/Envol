@@ -9,8 +9,8 @@ export class Bird {
     this.reset();
   }
 
-  reset() {
-    this.x = 0;
+  reset(startX = 0) {
+    this.x = startX;
     this.z = 0;             // position "monde local" (recentrée périodiquement)
     this.distance = 0;      // distance totale parcourue (score)
     this.speed = CONFIG.speed.start;
@@ -20,7 +20,7 @@ export class Bird {
   }
 
   update(dt, steer) {
-    const { speed, steer: s, world, bird } = CONFIG;
+    const { speed, steer: s, bird } = CONFIG;
     this.time += dt;
     this.speed = Math.min(speed.max, this.speed + speed.accel * dt);
 
@@ -29,10 +29,7 @@ export class Bird {
     this.lateralVel += (target - this.lateralVel) * Math.min(1, s.response * dt);
     this.x += this.lateralVel * dt;
 
-    // Bords du couloir : on reste dedans.
-    const lim = world.halfWidth - 1;
-    if (this.x > lim) { this.x = lim; this.lateralVel = Math.min(0, this.lateralVel); }
-    if (this.x < -lim) { this.x = -lim; this.lateralVel = Math.max(0, this.lateralVel); }
+    // Monde ouvert : aucune limite à gauche ni à droite.
 
     const dz = this.speed * dt;
     this.z -= dz;

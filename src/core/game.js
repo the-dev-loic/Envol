@@ -5,6 +5,7 @@ import { Bird } from '../player/bird.js';
 import { World } from '../world/world.js';
 import { createPlan } from '../world/stages.js';
 import { getTheme } from '../world/themes/index.js';
+import { safeX } from '../world/obstacles.js';
 import { enableTilt, calibrate, getSteer, getControl } from '../input/tilt.js';
 import { hud, modeLabel } from '../ui/hud.js';
 import { applyLandscape, viewportSize, tryNativeLock } from './orientation.js';
@@ -50,9 +51,9 @@ export class Game {
   /** Remet le monde à zéro pour un mode donné ('adventure' ou un nom de thème). */
   prepare(mode) {
     this.world.setPlan(createPlan(mode));
-    this.bird.reset();
-    this.world.reset();
-    this.world.update(this.bird.z, 0);
+    this.world.reset(Math.floor(Math.random() * 2 ** 31)); // monde différent à chaque partie
+    this.bird.reset(safeX(0));                           // départ sur le chemin sûr
+    this.world.update(this.bird.x, this.bird.z, 0, 0, true);
   }
 
   /** Appelé par un tap (geste utilisateur requis pour les permissions iOS). */
@@ -103,7 +104,7 @@ export class Game {
         this.world.rebase(off);
         this.bird.apply();
       }
-      this.world.update(this.bird.z, dt, this.bird.speed);
+      this.world.update(this.bird.x, this.bird.z, dt, this.bird.speed);
       this.checkStage();
       if (this.world.collides(this.bird.x, this.bird.z, CONFIG.bird.hitRadius)) this.gameOver();
       hud.update(this.bird.distance, this.bird.speed, this.world.sky);
@@ -111,7 +112,7 @@ export class Game {
       // Au menu / en fin de partie : léger battement d'ailes, obstacles mobiles animés.
       this.bird.time += dt;
       this.bird.apply();
-      if (this.state === 'menu') this.world.update(this.bird.z, dt);
+      if (this.state === 'menu') this.world.update(this.bird.x, this.bird.z, dt);
     }
     this.renderer.render(this.scene, this.camera);
   }

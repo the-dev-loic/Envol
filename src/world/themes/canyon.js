@@ -1,8 +1,7 @@
-// Thème "Canyon" : piliers de roche, arches à franchir, rochers qui roulent.
-import { ground, instances, scatter, borders, mover, safeX } from '../obstacles.js';
+// Thème "Canyon" : mesas géantes, piliers de roche, arches à franchir, rochers qui roulent.
+import { scatter, mover, laneX, laneInTile } from '../obstacles.js';
 import { CONFIG } from '../../config.js';
 import { groundMaterial, detail, sowDetails } from '../ground.js';
-import { mergeColored } from '../merge.js';
 
 const ROCKS = [0xc1693c, 0xb35a30, 0xd27d4a, 0xa94f2a];
 
@@ -15,71 +14,58 @@ export default {
 
   createAssets(THREE) {
     return {
-      pillar: new THREE.CylinderGeometry(1.5, 2.2, 14, 7).translate(0, 7, 0),
-      mesa: new THREE.CylinderGeometry(9, 12, 34, 6).translate(0, 17, 0),
-      lintel: new THREE.BoxGeometry(1, 2.2, 3).translate(0, 9, 0),
-      boulder: new THREE.IcosahedronGeometry(1.8, 0),
       groundMat: groundMaterial(THREE, {
         base: 0xd69a62, blotches: [0xc4844e, 0xe2b07a, 0xb9703f, 0xd8a46c], specks: [0x9e5f33, 0xf0c792, 0xb87a48], cracks: 28,
       }, 23),
-      detailMat: new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
-      rockMat: new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
+      mat: new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
+      boulder: new THREE.IcosahedronGeometry(1.8, 0),
       boulderMat: new THREE.MeshLambertMaterial({ color: 0x8a4b2a, flatShading: true }),
     };
   },
 
-  populateChunk(ctx) {
+  populateTile(ctx) {
     const { THREE, rng, difficulty: d, assets: a } = ctx;
+    const parts = [];
     const rock = () => ROCKS[rng.int(0, ROCKS.length - 1)];
-    ground(ctx, a.groundMat);
+    const pillar = (x, z, s, sy = 1) => {
+      parts.push({ geometry: new THREE.CylinderGeometry(1.5 * s, 2.2 * s, 14 * sy, 7).translate(x, 7 * sy, z), color: rock(), shade: rng.range(0.9, 1.05) });
+      ctx.addCollider(x, z, 1.9 * s);
+    };
 
-    const mesas = borders(ctx, 10, 6, 70).map((p) => ({ ...p, sx: rng.range(0.6, 1.3), sy: rng.range(0.5, 1.4), color: rock() }));
-    const pillars = [];
-    const lintels = [];
+    // Mesas géantes
+    for (const p of scatter(ctx, rng.int(1, 2), 12)) {
+      const s = rng.range(0.7, 1), h = rng.range(18, 40);
+      parts.push({ geometry: new THREE.CylinderGeometry(9 * s, 12 * s, h, 6).translate(p.x, h / 2, p.z), color: rock() });
+      parts.push({ geometry: new THREE.CylinderGeometry(9.3 * s, 9 * s, 1.2, 6).translate(p.x, h, p.z), color: 0xa94f2a });
+      ctx.addCollider(p.x, p.z, 11 * s);
+    }
+    // Piliers
+    for (const p of scatter(ctx, Math.round(8 + d * 16 + rng.range(0, 3)), 2.4)) pillar(p.x, p.z, rng.range(0.8, 1.3), rng.range(0.8, 1.3));
 
     if (!ctx.calm) {
-      // Piliers
-      for (const p of scatter(ctx, Math.round(4 + d * 12 + rng.range(0, 2)), 2.2)) {
-        const s = rng.range(0.8, 1.3);
-        pillars.push({ ...p, sx: s, sy: rng.range(0.8, 1.3), color: rock() });
-        ctx.addCollider(p.x, p.z, 1.9 * s);
-      }
-      // Arche au-dessus du couloir sûr : passer entre les deux piliers
-      if (rng.chance(0.45)) {
-        const z = -rng.range(12, ctx.length - 12);
-        const cx = safeX(ctx.distanceAt(z));
+      // Arche au-dessus du chemin : passer entre les deux piliers
+      const z = -rng.range(12, ctx.length - 12);
+      if (rng.chance(0.45) && laneInTile(ctx, z, 10)) {
+        const cx = laneX(ctx, z);
         const half = CONFIG.safeLane.halfWidthEasy + 2.4 - d * 0.8;
-        for (const x of [cx - half, cx + half]) {
-          pillars.push({ x, z, sx: 1, rotY: 0, color: rock() });
-          ctx.addCollider(x, z, 1.9);
-        }
-        lintels.push({ x: cx, z, sx: half * 2 + 3, sy: 1, sz: 1, rotY: 0, color: rock() });
+        pillar(cx - half, z, 1); pillar(cx + half, z, 1);
+        parts.push({ geometry: new THREE.BoxGeometry(half * 2 + 3, 2.2, 3).translate(cx, 9, z), color: rock() });
       }
-      // Rochers qui roulent de gauche à droite
-      if (d > 0.1 && rng.chance(0.3 + d * 0.5)) {
-        const z = -rng.range(10, ctx.length - 10);
+      // Rochers qui roulent autour du chemin
+      const zb = -rng.range(10, ctx.length - 10);
+      if (d > 0.1 && rng.chance(0.3 + d * 0.5) && laneInTile(ctx, zb)) {
         const ball = new THREE.Mesh(a.boulder, a.boulderMat);
         ball.position.y = 1.8;
-        mover(ctx, ball, { x: rng.range(-10, 10), z, r: 1.7, amplitude: rng.range(8, 15), speed: rng.range(0.8, 1.4 + d) });
+        mover(ctx, ball, { x: laneX(ctx, zb) + rng.range(-8, 8), z: zb, r: 1.7, amplitude: rng.range(8, 15), speed: rng.range(0.8, 1.4 + d) });
       }
     }
 
-    instances(ctx, a.mesa, a.rockMat, mesas);
-    instances(ctx, a.pillar, a.rockMat, pillars);
-    instances(ctx, a.lintel, a.rockMat, lintels);
-
-    // Détails au sol (fusionnés : 1 seul appel de rendu)
-    const det = [];
-    const { THREE: T } = ctx;
-    sowDetails(ctx, det, 70, [
-      (x, z) => detail.pebble(T, rng, x, z, 0xa8693e),
-      (x, z) => detail.pebble(T, rng, x, z, 0x8a5636),
-      (x, z) => detail.cactus(T, rng, x, z),
-      (x, z) => detail.bush(T, rng, x, z, 0x9a7b4f),
+    sowDetails(ctx, parts, 90, [
+      (x, z) => detail.pebble(THREE, rng, x, z, 0xa8693e),
+      (x, z) => detail.pebble(THREE, rng, x, z, 0x8a5636),
+      (x, z) => detail.cactus(THREE, rng, x, z),
+      (x, z) => detail.bush(THREE, rng, x, z, 0x9a7b4f),
     ]);
-    const detMesh = new T.Mesh(mergeColored(T, det), a.detailMat);
-    ctx.group.add(detMesh);
-    ctx.track(detMesh.geometry);
-
+    ctx.merge(parts, a.mat);
   },
 };

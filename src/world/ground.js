@@ -1,6 +1,9 @@
 // Sol des mondes : texture procédurale (pas d'image à télécharger) + petits détails posés au sol.
 // Les détails sont fusionnés avec le reste du décor via mergeColored (merge.js).
 
+/** Largeur de la bande de sol de chaque rangée (elle suit l'oiseau en X). */
+export const GROUND_WIDTH = 2400;
+
 /**
  * Texture de sol qui se répète sans couture (une tuile = `tile` mètres).
  * spec: { base, blotches: [couleurs], specks: [couleurs], cracks?: nb de fissures, stripes?: bool }
@@ -55,8 +58,8 @@ export function groundTexture(THREE, spec, seed = 1) {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
-  const tile = spec.tile ?? 15;
-  t.repeat.set(260 / tile, 60 / tile);
+  const tile = spec.tile ?? 15; // doit diviser 60 (le sol se décale par pas de 60 m)
+  t.repeat.set(GROUND_WIDTH / tile, 60 / tile);
   return t;
 }
 
@@ -113,11 +116,12 @@ export const detail = {
   },
 };
 
-/** Sème `count` détails sur le sol du tronçon (couloir + abords). makers: [(x, z) => parts[]] */
-export function sowDetails(ctx, parts, count, makers, spread = 30) {
-  const { rng, halfWidth: hw, length: L } = ctx;
+/** Sème `count` détails sur le sol de la case. makers: [(x, z) => parts[]] */
+export function sowDetails(ctx, parts, count, makers) {
+  const { rng, width: W, length: L } = ctx;
+  count = Math.round(count * W / 100); // quantités données pour une case de 100 m
   for (let i = 0; i < count; i++) {
-    const x = rng.range(-hw - spread, hw + spread), z = -rng.range(0, L);
+    const x = rng.range(-W / 2, W / 2), z = -rng.range(0, L);
     parts.push(...makers[rng.int(0, makers.length - 1)](x, z));
   }
 }

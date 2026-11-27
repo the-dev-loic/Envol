@@ -6,7 +6,8 @@
 - Jeu en ligne : https://the-dev-loic.github.io/Envol/ (GitHub Pages, publié à chaque push sur `main`).
 
 ## Le jeu
-Oiseau à la 1re personne, avance tout seul vers l'avant, de plus en plus vite, monde infini.
+Oiseau à la 1re personne, avance tout seul vers l'avant, de plus en plus vite.
+**Monde ouvert** : infini devant ET sur les côtés (aucun mur), **différent à chaque partie** (graine aléatoire).
 On va à gauche/droite en inclinant le téléphone. Collision avec un obstacle = fin. Score = distance (m).
 Modes : **Aventure** (étapes de 1200 m : Forêt → Campagne → Canyon → Neige → Ville, puis boucle) ou **un seul monde** à l'infini.
 Record séparé par mode (localStorage `birdrun.best.<mode>`).
@@ -28,13 +29,13 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/core/rng.js` | Aléatoire déterministe par tronçon | — |
 | `src/input/tilt.js` | Inclinaison iOS (vecteur gravité continu, axe Y du téléphone, sens selon `gameAngle()`) + secours clavier/tactile → `getSteer()` ∈ [-1,1] | contrôles |
 | `src/player/bird.js` | Caméra = oiseau : avance, latéral, roulis, battement, FOV vitesse | sensations de vol |
-| `src/world/world.js` | Tronçons infinis, colliders, obstacles mobiles, transition d'ambiance entre thèmes, recentrage | génération générale |
+| `src/world/world.js` | **Grille de cases** (ix, iz) créées autour de l'oiseau (quelques-unes par image), sol par rangée qui suit l'oiseau en X, colliders (case + voisines), obstacles mobiles, ambiance, recentrage Z | génération générale |
 | `src/world/stages.js` | Plan de partie : thème + n° d'étape pour chaque tronçon | modes, enchaînement des étapes |
 | `src/world/sky.js` | Ciel en dégradé, soleil/lune/étoiles, **cycle jour/nuit**, **météo** (beau, brouillard, pluie / neige), précipitations. `world.sky.set({time, weather})` pour tester | ambiance, météo |
 | `src/world/ground.js` | Sol : `groundMaterial()` (texture procédurale sans image) + petits détails `detail.*` / `sowDetails()` (touffes, fleurs, cailloux, champignons, cactus…) | rendu du sol |
 | `src/world/merge.js` | `mergeColored()` : fusionne des pièces colorées en 1 géométrie (1 appel de rendu par tronçon) | décor riche (ville, campagne) |
-| `src/world/obstacles.js` | Briques pour les thèmes : `scatter`, `wallWithGap`, `borders`, `instances`, `mover`, couloir sûr `safeX`/`isFree` | nouveaux types d'obstacles |
-| `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon, snow, city (façades à fenêtres, boulevard) | nouveaux mondes |
+| `src/world/obstacles.js` | Briques pour les thèmes : `scatter`, `density`, `wallWithGap`, `instances`, `mover` ; **chemin sûr** `setLaneSeed`/`safeX`/`laneX`/`laneInTile`/`isFree` | nouveaux types d'obstacles |
+| `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon (mesas), snow (montagnes), city (quadrillage d'avenues tous les 40 m + rues transversales) | nouveaux mondes |
 | `src/world/themes/index.js` | Registre des thèmes | ajouter un thème |
 | `src/ui/hud.js` + `index.html` + `styles.css` | Menu (choix du mode, commandes, état hors connexion), score, bannière, fin, records | interface |
 | `sw.js` + `tools/update-sw.py` | Hors connexion : cache complet du jeu | ajout de fichiers (relancer le script) |
@@ -44,32 +45,36 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 export default {
   name, label: 'Nom affiché', sky: 0xRRGGBB, fog: { near, far }, precipitation?: 'rain' | 'snow',
   light: { sky, ground, sun },              // couleurs des lumières (transition douce entre thèmes)
-  createAssets(THREE) -> {...},             // géométries/matériaux, créés une fois à la 1re utilisation
-  populateChunk(ctx)                        // remplit UN tronçon
+  createAssets(THREE) -> { groundMat, ... }, // groundMat OBLIGATOIRE (sol de la rangée) ; créés une fois
+  populateTile(ctx)                         // remplit UNE case (largeur ctx.width, longueur ctx.length)
 }
-// ctx = { THREE, group, index, length, halfWidth, rng, difficulty /*0..1*/, calm /*true = pas d'obstacle*/,
-//         assets, shared /*{ground}*/, distanceAt(z), addCollider(x,z,r), addMover(m),
-//         addSpinner(object, speed, axis='z') /*décor qui tourne*/, track(obj) }
+// ctx = { THREE, group, index /*iz*/, ix, width, length, offsetX, rng, difficulty /*0..1*/, calm,
+//         laneMargin, assets, distanceAt(z), addCollider(x,z,r), addMover(m), addSpinner(obj, speed, axis),
+//         reserve(x,z,r), isClear(x,z,r), merge(parts, material), track(obj) }
 ```
-- Coordonnées locales au tronçon : `z` entre `-length` et `0`, `x` entre `-halfWidth` et `halfWidth`.
-- `addCollider` = obstacle circulaire (vu de dessus). Obstacle mobile : `mover(ctx, mesh, {x,z,r,amplitude,speed})`.
-- **Couloir sûr** : chemin sinueux (`safeX`) jamais bloqué par un obstacle fixe → toujours franchissable.
-  Placer les obstacles fixes via `scatter`/`wallWithGap` (ou vérifier `isFree`). Les mobiles peuvent le croiser.
-- Perf : `instances()` (InstancedMesh) pour les objets répétés, ou `mergeColored()` pour fusionner tout le décor d'un tronçon. `ctx.rng` toujours (jamais `Math.random`).
-- Obstacle qu'on traverse (grange) : poser ses colliders à la main autour du couloir sûr (`safeX`) et réserver sa zone pour que `scatter` ne mette rien dedans (voir country.js).
-- Sol : `groundMat: groundMaterial(THREE, { base, blotches, specks, blades?, cracks? }, seed)` + détails semés avec `sowDetails`.
+- Coordonnées locales à la case : `x ∈ [-width/2, width/2]`, `z ∈ [-length, 0]`. X monde = `offsetX + x`.
+- **Remplir toute la case** (pas de couloir ni de bord) : le joueur peut aller partout.
+- Quantités données **pour une case de 100 m** : `scatter`/`sowDetails` les ajustent seuls ; sinon `density(ctx, n)`.
+- **Chemin sûr** (`safeX`, tracé tiré de la graine) : jamais bloqué par un obstacle fixe → toujours un passage.
+  Obstacles fixes via `scatter` (respecte chemin + zones réservées) ou vérifier `isFree`.
+  Obstacles « sur le chemin » (rangées avec passage, arches, granges, mobiles) : seulement si `laneInTile(ctx, z)`, centrés sur `laneX(ctx, z)`.
+- `calm` (départ, début d'étape) : pas de rangée/arche/mobile ; `scatter` laisse `calmMargin` m libres autour du chemin.
+- Perf : tout le décor fixe d'une case dans `ctx.merge(parts, mat)` (1 appel de rendu). Pièces = `{ geometry, color, shade? }`.
+- Obstacle qu'on traverse (grange) : colliders posés à la main + `ctx.reserve()` (voir country.js).
+- Sol : `groundMat: groundMaterial(THREE, { base, blotches, specks, blades?, cracks?, tile? }, seed)` (tile divise 60) + détails `sowDetails`.
 - L'heure et la météo modifient l'ambiance du thème (sky.js) : le thème donne seulement ses couleurs « de jour par beau temps ».
 - Nouveau thème : créer le fichier, l'ajouter dans `themes/index.js` (et `CONFIG.stages.order` pour l'Aventure).
 
 ## Tests
 Chrome headless + puppeteer-core : servir le dossier, cliquer `[data-mode=adventure]`, puis autopilote
-`bird.x = safeX(bird.distance)` sur ~10 km → doit donner 0 collision avec les obstacles fixes.
+`bird.x = safeX(bird.distance)` sur ~10 km → 0 collision avec les obstacles fixes (vérifier case + 8 voisines).
+Vol latéral : `bird.update(dt, 1)` pendant 40 s → x > 700 sans erreur. Deux `prepare()` → graines différentes.
 Hors connexion : `page.setOfflineMode(true)` puis recharger → le menu doit s'afficher et une partie démarrer.
 
 ## Conventions
-- Axe d'avance : **-Z**. L'oiseau garde `y = CONFIG.bird.height`.
+- Axe d'avance : **-Z**. L'oiseau garde `y = CONFIG.bird.height`. Pas de limite en X.
 - Toute valeur réglable va dans `config.js`, pas en dur.
-- Budget perf : viser ≤ 90 draw calls (mesuré : 79 au pire en Aventure) (`__game.renderer.info.render.calls` en console).
+- Budget perf : viser ≤ 90 draw calls (mesuré : 77 au pire, en ville ; ~40-55 ailleurs ; ≤ 300 k triangles) (`__game.renderer.info.render.calls` en console).
 - Après une modif : mettre à jour la carte ci-dessus si un fichier est ajouté, et `docs/ROADMAP.md`.
 - `window.__game` exposé pour le debug.
 

@@ -9,10 +9,11 @@ export const CONFIG = {
     rampChunks: 100,         // tronçons pour atteindre la difficulté max (0 → 1)
   },
 
-  // Couloir sûr : un chemin sinueux toujours libre d'obstacles fixes (garantit qu'on peut passer).
+  // Chemin sûr : un chemin sinueux toujours libre d'obstacles fixes (garantit qu'on peut passer).
+  // Son tracé change à chaque partie (graine aléatoire). Ailleurs, le monde est libre mais rempli d'obstacles.
   safeLane: {
-    amplitude: 17,           // écart max du chemin par rapport au centre
-    wavelength: 700,         // longueur d'une ondulation (plus grand = plus doux)
+    amplitude: 30,           // écart max du chemin
+    wavelength: 1400,        // longueur d'une ondulation (pente toujours rattrapable par l'oiseau)
     halfWidthEasy: 4,        // demi-largeur libre au début
     halfWidthHard: 2.6,      // demi-largeur libre à difficulté max
   },
@@ -31,11 +32,16 @@ export const CONFIG = {
     bankMaxDeg: 28,          // roulis de la caméra en virage
   },
 
+  // Monde ouvert : grille de cases (largeur tileWidth × longueur chunkLength) générées autour de l'oiseau.
+  // Pas de mur : à gauche et à droite, le monde continue à l'infini.
   world: {
-    chunkLength: 60,         // longueur d'un tronçon de monde
-    chunksAhead: 7,          // tronçons générés devant
-    chunksBehind: 1,         // tronçons gardés derrière
-    halfWidth: 32,           // largeur jouable de chaque côté du centre
+    chunkLength: 60,         // longueur d'une case (le long de la course)
+    tileWidth: 150,          // largeur d'une case (les quantités d'objets des thèmes sont données pour 100 m)
+    chunksAhead: 7,          // rangées générées devant
+    chunksBehind: 1,         // rangées gardées derrière
+    tilesSide: 1,            // cases de chaque côté de l'oiseau
+    buildPerFrame: 3,        // cases créées au plus par image (évite les saccades)
+    calmMargin: 14,          // au départ et en début d'étape : rien à moins de X m du chemin
     rebaseDistance: 2000,    // recentrage de l'origine (précision flottante)
   },
 
