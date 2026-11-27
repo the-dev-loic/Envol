@@ -17,6 +17,7 @@ export class Game {
     this.scene = new THREE.Scene();
     const { fov, near, far } = CONFIG.camera;
     this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
+    this.scene.add(this.camera); // la caméra porte les ailes et le bec de l'oiseau
     this.bird = new Bird(this.camera);
     this.world = new World(this.scene);
     this.world.setCamera(this.camera);
@@ -76,7 +77,8 @@ export class Game {
     this.clock.getDelta();
     this.state = 'playing';
     hud.showPlaying();
-    hud.banner(mode === 'adventure' ? 'Étape 1' : modeLabel(mode), getTheme(this.world.stageAt(0).theme).label);
+    const t0 = getTheme(this.world.stageAt(0).theme);
+    hud.banner(mode === 'adventure' ? 'Étape 1' : 'C\u2019est parti !', `${t0.icon ?? ''} ${t0.label}`);
   }
 
   toMenu() {
@@ -123,7 +125,8 @@ export class Game {
     const stage = this.world.stageAt(this.bird.z);
     if (stage.number !== this.stageNumber) {
       this.stageNumber = stage.number;
-      hud.banner(`Étape ${stage.number}`, getTheme(stage.theme).label);
+      const t = getTheme(stage.theme);
+      hud.banner(`Étape ${stage.number}`, `${t.icon ?? ''} ${t.label}`);
     }
   }
 }

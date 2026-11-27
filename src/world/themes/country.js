@@ -5,25 +5,28 @@
 import { scatter, wallWithGap, mover, laneX, laneInTile, density } from '../obstacles.js';
 import { mergeColored } from '../merge.js';
 import { groundMaterial, detail, sowDetails } from '../ground.js';
+import { toonColors } from '../style.js';
+import { lollipopTree, bigFlower } from '../cute.js';
 
-const CROPS = [0xe9c46a, 0x9ccc65, 0xd4a373, 0xb5a1e0, 0x7cb342];
-const FLOWERS = [0xffffff, 0xffeb3b, 0xe91e63, 0x9c27b0, 0xff7043];
+const CROPS = [0xffd23f, 0x8ee04f, 0xffa94d, 0xc49bff, 0x5fd35f, 0xff8fb1];
+const FLOWERS = [0xffffff, 0xffe14d, 0xff5c9e, 0xb388ff, 0xff8c42, 0x5ec8ff];
 const BARN = { w: 12, d: 12, h: 7, doorHalf: 3.4, doorH: 6 };
 
 export default {
   name: 'country',
   label: 'Campagne',
-  sky: 0xa9d8f2,
-  fog: { near: 70, far: 400 },
-  light: { sky: 0xfff6e0, ground: 0x5f8a3a, sun: 0xfff0c8 },
+  icon: '🐄',
+  sky: 0x8fd8ff,
+  fog: { near: 80, far: 400 },
+  light: { sky: 0xffffff, ground: 0x86c96a, sun: 0xfff4d6 },
 
   createAssets(THREE) {
-    const flatMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    const flatMat = toonColors();
     // Ailes de moulin (tournent autour de Z, face au joueur)
     const blades = [{ geometry: new THREE.CylinderGeometry(0.45, 0.45, 0.8, 8).rotateX(Math.PI / 2), color: 0x5d4037 }];
     for (let k = 0; k < 4; k++) {
       blades.push({ geometry: new THREE.BoxGeometry(0.18, 6.6, 0.12).translate(0, 3.7, 0).rotateZ((k * Math.PI) / 2), color: 0x6d4c41 });
-      blades.push({ geometry: new THREE.BoxGeometry(1.3, 5.2, 0.06).translate(0.75, 4.2, 0).rotateZ((k * Math.PI) / 2), color: 0xf5f0e6 });
+      blades.push({ geometry: new THREE.BoxGeometry(1.3, 5.2, 0.06).translate(0.75, 4.2, 0).rotateZ((k * Math.PI) / 2), color: k % 2 ? 0xff7eb6 : 0xffffff });
     }
     // Nuée de corbeaux
     const flock = [];
@@ -34,7 +37,7 @@ export default {
     }
     return {
       groundMat: groundMaterial(THREE, {
-        base: 0x86c04e, blotches: [0x78b043, 0x95cc5c, 0xa7c95a, 0x6ea33e, 0xb3c95e], specks: [0x5c9634, 0xb5dc74, 0xd9e27a], blades: true,
+        base: 0x8be05c, blotches: [0x7dd64e, 0x9ee86c, 0xb4ea72, 0x72cc48], specks: [0x62bf3f, 0xc4f28a, 0xffffff], blades: true, speckCount: 4000,
       }, 53),
       flatMat,
       blades: mergeColored(THREE, blades),
@@ -106,7 +109,7 @@ export default {
     // ---------- Grange à traverser (portes avant/arrière ouvertes) ----------
     function barn(cx, cz) {
       const { w, d: dp, h, doorHalf: dh, doorH } = BARN;
-      const red = 0xb5382e, white = 0xf4efe6, roof = 0x4e4e52;
+      const red = 0xff5a4f, white = 0xffffff, roof = 0x5b6ee1;
       ctx.reserve(cx, cz, 10);
       for (const s of [-1, 1]) {
         add(box(0.4, h, dp).translate(cx + s * w / 2, h / 2, cz), red);
@@ -168,8 +171,8 @@ export default {
     }
     // Moulins (seule la tour est un obstacle ; on passe sous les ailes)
     for (const p of scatter(ctx, rng.chance(0.35 + d * 0.25) ? 1 : 0, 3.2)) {
-      add(new THREE.CylinderGeometry(1.8, 2.7, 11, 8).translate(p.x, 5.5, p.z), 0xefe6d2);
-      add(new THREE.ConeGeometry(2.6, 3, 8).translate(p.x, 12.5, p.z), 0x6d4c41);
+      add(new THREE.CylinderGeometry(1.8, 2.7, 11, 14).translate(p.x, 5.5, p.z), 0xfff4e0);
+      add(new THREE.ConeGeometry(2.6, 3.4, 14).translate(p.x, 12.7, p.z), 0x5b6ee1);
       add(box(1.2, 2, 0.2).translate(p.x, 1, p.z + 2.6), 0x5d4037);
       const blades = new THREE.Mesh(a.blades, a.flatMat);
       blades.position.set(p.x, 11.6, p.z + 2.6);
@@ -181,22 +184,19 @@ export default {
     // Chênes
     for (const p of scatter(ctx, Math.round(4 + d * 8 + rng.range(0, 3)), 2.2)) {
       const s = rng.range(0.9, 1.25);
-      add(new THREE.CylinderGeometry(0.35 * s, 0.5 * s, 3 * s, 6).translate(p.x, 1.5 * s, p.z), 0x6d4c41);
-      for (let i = 0; i < 3; i++) {
-        add(new THREE.IcosahedronGeometry(rng.range(1.6, 2.2) * s, 0).translate(p.x + rng.range(-0.9, 0.9), (3.6 + rng.range(0, 1.4)) * s, p.z + rng.range(-0.9, 0.9)), [0x558b2f, 0x689f38, 0x4e7d2a][rng.int(0, 2)]);
-      }
+      parts.push(...lollipopTree(THREE, rng, p.x, p.z, s, [0x5ad35a, 0x3fc15c, 0x86e04f, 0xff9ecf][rng.int(0, 3)]));
       ctx.addCollider(p.x, p.z, 2 * s);
     }
     // Peupliers
     for (const p of scatter(ctx, rng.int(0, 4), 1.9)) {
       add(box(0.4, 3, 0.4).translate(p.x, 1.5, p.z), 0x6d4c41);
-      add(new THREE.ConeGeometry(1.8, 11, 7).translate(p.x, 8, p.z), 0x4f8a2b, rng.range(0.85, 1.1));
+      add(new THREE.CapsuleGeometry(1.6, 7, 6, 12).translate(p.x, 7.5, p.z), 0x3fc15c, rng.range(0.9, 1.1));
       ctx.addCollider(p.x, p.z, 1.6);
     }
     // Silos
     for (const p of scatter(ctx, rng.chance(0.3 + d * 0.2) ? 1 : 0, 2.4)) {
-      add(new THREE.CylinderGeometry(2.1, 2.1, 12, 12).translate(p.x, 6, p.z), rng.chance(0.5) ? 0xb0bec5 : 0xc0574a);
-      add(new THREE.SphereGeometry(2.1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2).translate(p.x, 12, p.z), 0x90a4ae);
+      add(new THREE.CylinderGeometry(2.1, 2.1, 12, 16).translate(p.x, 6, p.z), rng.chance(0.5) ? 0x7ecbff : 0xff6b6b);
+      add(new THREE.SphereGeometry(2.1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(p.x, 12, p.z), 0xffffff);
       ctx.addCollider(p.x, p.z, 2.2);
     }
     // Meules de foin (pyramide de bottes rondes)
@@ -230,11 +230,11 @@ export default {
       if (ctx.isClear(x, z, 2)) animal(x, z);
     }
 
-    sowDetails(ctx, parts, 160, [
+    sowDetails(ctx, parts, 120, [
       (x, z) => detail.tuft(THREE, rng, x, z, 0x5f9a35),
       (x, z) => detail.tuft(THREE, rng, x, z, 0x7ab648),
-      (x, z) => detail.flower(THREE, rng, x, z, FLOWERS[rng.int(0, FLOWERS.length - 1)]),
-      (x, z) => detail.flower(THREE, rng, x, z, FLOWERS[rng.int(0, FLOWERS.length - 1)]),
+      (x, z) => bigFlower(THREE, rng, x, z, FLOWERS[rng.int(0, FLOWERS.length - 1)]),
+      (x, z) => bigFlower(THREE, rng, x, z, FLOWERS[rng.int(0, FLOWERS.length - 1)], 0.55),
       (x, z) => detail.pebble(THREE, rng, x, z, 0x9e9e96),
     ]);
     ctx.merge(parts, a.flatMat);

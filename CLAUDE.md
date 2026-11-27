@@ -6,6 +6,7 @@
 - Jeu en ligne : https://the-dev-loic.github.io/Envol/ (GitHub Pages, publié à chaque push sur `main`).
 
 ## Le jeu
+**Style graphique : enfantin / dessin animé** (couleurs bonbon, formes rondes, ombrage cartoon, soleil et lune qui sourient, interface « gommes » colorées). Garder ce style pour tout ajout.
 Oiseau à la 1re personne, avance tout seul vers l'avant, de plus en plus vite.
 **Monde ouvert** : infini devant ET sur les côtés (aucun mur), **différent à chaque partie** (graine aléatoire).
 On va à gauche/droite en inclinant le téléphone. Collision avec un obstacle = fin. Score = distance (m).
@@ -29,11 +30,13 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/core/orientation.js` | Garde le jeu en **paysage** : si l'écran est en portrait, `#app` est tourné de -90° (`viewportSize()` = taille paysage, `gameAngle()` = 90/-90) | orientation |
 | `src/core/rng.js` | Aléatoire déterministe par tronçon | — |
 | `src/input/tilt.js` | Inclinaison iOS (vecteur gravité continu ; côté du paysage mesuré **physiquement** à la calibration via le signe de `up.x`, jamais via `screen.orientation.angle` ; option « sens inversé » mémorisée `birdrun.invert`) + secours clavier/tactile → `getSteer()` ∈ [-1,1] | contrôles |
-| `src/player/bird.js` | Caméra = oiseau : avance, latéral, roulis, battement, FOV vitesse | sensations de vol |
+| `src/player/bird.js` | Caméra = oiseau : avance, latéral, roulis, battement, FOV vitesse ; **ailes qui battent + bec** attachés à la caméra | sensations de vol |
 | `src/world/world.js` | **Grille de cases** (ix, iz) créées autour de l'oiseau (quelques-unes par image), sol par rangée qui suit l'oiseau en X, colliders (case + voisines), obstacles mobiles, ambiance, recentrage Z | génération générale |
 | `src/world/stages.js` | Plan de partie : thème + n° d'étape pour chaque tronçon | modes, enchaînement des étapes |
-| `src/world/sky.js` | Ciel en dégradé, soleil/lune/étoiles, **cycle jour/nuit**, **météo** (beau, brouillard, pluie / neige), précipitations. `world.sky.set({time, weather})` pour tester | ambiance, météo |
+| `src/world/sky.js` | Ciel en dégradé, **soleil qui sourit / lune qui dort** (textures canvas), **gros nuages** (1 objet, motif répété), étoiles, **cycle jour/nuit**, **météo** (beau, brouillard, pluie / neige), précipitations. `world.sky.set({time, weather})` pour tester | ambiance, météo |
 | `src/world/ground.js` | Sol : `groundMaterial()` (texture procédurale sans image) + petits détails `detail.*` / `sowDetails()` (touffes, fleurs, cailloux, champignons, cactus…) | rendu du sol |
+| `src/world/style.js` | **Matériaux cartoon** : `toon()` / `toonColors()` (MeshToonMaterial + dégradé 3 tons). Ne plus utiliser MeshLambert/Standard | rendu, style |
+| `src/world/cute.js` | Pièces mignonnes réutilisables : `lollipopTree`, `stackPine`, `mushroom` (à pois), `bigFlower`, `roundRock`, `snowman`, `penguin`, `cactus` | décor enfantin |
 | `src/world/merge.js` | `mergeColored()` : fusionne des pièces colorées en 1 géométrie (1 appel de rendu par tronçon) | décor riche (ville, campagne) |
 | `src/world/obstacles.js` | Briques pour les thèmes : `scatter`, `density`, `wallWithGap`, `instances`, `mover` ; **chemin sûr** `setLaneSeed`/`safeX`/`laneX`/`laneInTile`/`isFree` | nouveaux types d'obstacles |
 | `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon (mesas), snow (montagnes), city (quadrillage d'avenues tous les 40 m + rues transversales) | nouveaux mondes |
@@ -44,7 +47,7 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 ## Contrat d'un thème (pour « modifier le monde »)
 ```js
 export default {
-  name, label: 'Nom affiché', sky: 0xRRGGBB, fog: { near, far }, precipitation?: 'rain' | 'snow',
+  name, label: 'Nom affiché', icon: '🌳', sky: 0xRRGGBB, fog: { near, far }, precipitation?: 'rain' | 'snow',
   light: { sky, ground, sun },              // couleurs des lumières (transition douce entre thèmes)
   createAssets(THREE) -> { groundMat, ... }, // groundMat OBLIGATOIRE (sol de la rangée) ; créés une fois
   populateTile(ctx)                         // remplit UNE case (largeur ctx.width, longueur ctx.length)
@@ -60,7 +63,8 @@ export default {
   Obstacles fixes via `scatter` (respecte chemin + zones réservées) ou vérifier `isFree`.
   Obstacles « sur le chemin » (rangées avec passage, arches, granges, mobiles) : seulement si `laneInTile(ctx, z)`, centrés sur `laneX(ctx, z)`.
 - `calm` (départ, début d'étape) : pas de rangée/arche/mobile ; `scatter` laisse `calmMargin` m libres autour du chemin.
-- Perf : tout le décor fixe d'une case dans `ctx.merge(parts, mat)` (1 appel de rendu). Pièces = `{ geometry, color, shade? }`.
+- Perf : tout le décor fixe d'une case dans `ctx.merge(parts, toonColors())` (1 appel de rendu). Pièces = `{ geometry, color, shade? }`.
+- **Triangles** : formes rondes = beaucoup de triangles. Petits détails (semés par centaines) en très peu de segments (icosaèdre niveau 0, cylindres 3-5 côtés). Viser ≤ 450 k triangles visibles.
 - Obstacle qu'on traverse (grange) : colliders posés à la main + `ctx.reserve()` (voir country.js).
 - Sol : `groundMat: groundMaterial(THREE, { base, blotches, specks, blades?, cracks?, tile? }, seed)` (tile divise 60) + détails `sowDetails`.
 - L'heure et la météo modifient l'ambiance du thème (sky.js) : le thème donne seulement ses couleurs « de jour par beau temps ».
@@ -75,7 +79,7 @@ Hors connexion : `page.setOfflineMode(true)` puis recharger → le menu doit s'a
 ## Conventions
 - Axe d'avance : **-Z**. L'oiseau garde `y = CONFIG.bird.height`. Pas de limite en X.
 - Toute valeur réglable va dans `config.js`, pas en dur.
-- Budget perf : viser ≤ 90 draw calls (mesuré : 77 au pire, en ville ; ~40-55 ailleurs ; ≤ 300 k triangles) (`__game.renderer.info.render.calls` en console).
+- Budget perf : viser ≤ 90 draw calls (mesuré : ~90 au pire en ville, ~50-63 ailleurs) et ≤ 450 k triangles (mesuré : 165-460 k) (`__game.renderer.info.render.calls` en console).
 - Après une modif : mettre à jour la carte ci-dessus si un fichier est ajouté, et `docs/ROADMAP.md`.
 - `window.__game` exposé pour le debug.
 

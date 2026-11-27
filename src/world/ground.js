@@ -4,6 +4,8 @@
 /** Largeur de la bande de sol de chaque rangée (elle suit l'oiseau en X). */
 export const GROUND_WIDTH = 2400;
 
+import { toon } from './style.js';
+
 /**
  * Texture de sol qui se répète sans couture (une tuile = `tile` mètres).
  * spec: { base, blotches: [couleurs], specks: [couleurs], cracks?: nb de fissures, stripes?: bool }
@@ -64,7 +66,7 @@ export function groundTexture(THREE, spec, seed = 1) {
 }
 
 export function groundMaterial(THREE, spec, seed) {
-  return new THREE.MeshLambertMaterial({ map: groundTexture(THREE, spec, seed) });
+  return toon({ map: groundTexture(THREE, spec, seed) });
 }
 
 // ---------- Petits détails au sol (renvoient des pièces pour mergeColored) ----------

@@ -5,8 +5,10 @@
 import { mover, isFree } from '../obstacles.js';
 import { mergeColored } from '../merge.js';
 import { groundMaterial, detail } from '../ground.js';
+import { toon, toonColors } from '../style.js';
+import { lollipopTree } from '../cute.js';
 
-const FACADES = [0xf1e3cf, 0xe0a98f, 0xb5c4d4, 0xd8d0c2, 0x9fb7ae, 0xf2cf91, 0xc9b6d6];
+const FACADES = [0xffb3c7, 0xa8e6cf, 0xfff3b0, 0xb5d8ff, 0xffcf9f, 0xd7b5ff, 0xff9aa2, 0x9ee7e1];
 const ADS = [0xff5e5b, 0x2ec4b6, 0xffd23f, 0x7b61ff, 0xff8c42];
 const TILE = 12;      // une répétition de la texture de fenêtres = 12 m × 12 m (4 × 4 fenêtres)
 const AVE = 40;       // écart entre deux avenues (mètres, en X monde)
@@ -28,13 +30,16 @@ function facadeTextures(THREE) {
   for (let row = 0; row < 4; row++) {
     for (let col = 0; col < 4; col++) {
       const x = col * cell + 14, y = row * cell + 12, w = cell - 28, h = cell - 26;
-      m.fillStyle = '#d9d4cc'; m.fillRect(col * cell, row * cell + cell - 6, cell, 3); // corniche d'étage
+      m.fillStyle = '#efe9f5'; m.fillRect(col * cell, row * cell + cell - 6, cell, 3); // corniche d'étage
       const lit = (row === 0 && col === 0) || rnd() < 0.38;
-      m.fillStyle = lit ? '#ffd889' : '#33475b';
-      m.fillRect(x, y, w, h);
-      m.fillStyle = 'rgba(255,255,255,0.25)'; m.fillRect(x, y, w, 4);          // reflet
-      m.fillStyle = '#c9c3b8'; m.fillRect(x + w / 2 - 1, y + 8, 2, h - 8);      // meneau
-      if (lit) { g.fillStyle = '#ffc861'; g.fillRect(x, y, w, h); }
+      const round = (ctx2, rx, ry, rw, rh, r) => { ctx2.beginPath(); ctx2.roundRect(rx, ry, rw, rh, r); ctx2.fill(); };
+      m.fillStyle = '#ffffff'; round(m, x - 4, y - 4, w + 8, h + 8, 12);                   // cadre blanc
+      m.fillStyle = lit ? '#ffe08a' : '#5aa9e6';
+      round(m, x, y, w, h, 10);
+      m.fillStyle = 'rgba(255,255,255,0.45)'; round(m, x + 4, y + 4, w * 0.35, h * 0.35, 6); // reflet
+      m.fillStyle = '#ffffff'; m.fillRect(x + w / 2 - 1.5, y, 3, h);                        // croisillon
+      m.fillRect(x, y + h / 2 - 1.5, w, 3);
+      if (lit) { g.fillStyle = '#ffc861'; round(g, x, y, w, h, 10); }
     }
   }
   const tex = (c) => {
@@ -91,19 +96,19 @@ function tower(THREE, rng, parts, x, z, w, h, color) {
 export default {
   name: 'city',
   label: 'Ville',
-  sky: 0xf3a37c,
-  fog: { near: 45, far: 340 },
-  light: { sky: 0xffe0cc, ground: 0x3b3f4c, sun: 0xffb98c },
+  icon: '🏙️',
+  sky: 0xffc8dd,
+  fog: { near: 60, far: 340 },
+  light: { sky: 0xffffff, ground: 0x8a90a8, sun: 0xffe6d6 },
 
   createAssets(THREE) {
     const { map, glow } = facadeTextures(THREE);
     return {
       groundMat: groundMaterial(THREE, {
-        base: 0x46494f, blotches: [0x3c3f45, 0x52555c, 0x41444a, 0x37393e], specks: [0x5c5f66, 0x34363b, 0x6a6d73],
-        cracks: 30, speckCount: 9000, speckSize: 1.4, tile: 12,
+        base: 0x7d8499, blotches: [0x737a90, 0x878ea3, 0x6f768b], specks: [0x9aa1b5, 0x666d82], speckCount: 4000, speckSize: 1.4, tile: 12,
       }, 41),
-      buildingMat: new THREE.MeshLambertMaterial({ map, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0.85, vertexColors: true }),
-      flatMat: new THREE.MeshLambertMaterial({ vertexColors: true }),
+      buildingMat: toon({ map, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0.7, vertexColors: true }),
+      flatMat: toonColors(),
       droneGeo: mergeColored(THREE, [
         { geometry: new THREE.BoxGeometry(1.4, 0.35, 1.4), color: 0x2d3436 },
         ...[[-0.8, -0.8], [0.8, -0.8], [-0.8, 0.8], [0.8, 0.8]].map(([x, z]) => ({
@@ -125,8 +130,8 @@ export default {
 
     function lamp(x, z, dir) {
       if (!isFree(ctx, x, z, 0.5)) return;
-      flat.push({ geometry: new THREE.CylinderGeometry(0.1, 0.14, 7, 6).translate(x, 3.5, z), color: 0x2f3237 });
-      flat.push({ geometry: box(1.6, 0.12, 0.12, x + dir * 0.8, 7, z), color: 0x2f3237 });
+      flat.push({ geometry: new THREE.CylinderGeometry(0.12, 0.16, 7, 10).translate(x, 3.5, z), color: 0x4b5bd6 });
+      flat.push({ geometry: box(1.6, 0.16, 0.16, x + dir * 0.8, 7, z), color: 0x4b5bd6 });
       const head = box(0.9, 0.25, 0.5, x + dir * 1.5, 6.85, z);
       const uv = head.attributes.uv;
       for (let k = 0; k < uv.count; k++) uv.setXY(k, LIT_UV[0], LIT_UV[1]);
@@ -135,11 +140,10 @@ export default {
     }
     function tree(x, z) {
       if (!isFree(ctx, x, z, 1.8)) return;
-      flat.push({ geometry: box(2.2, 0.8, 2.2, x, 0.4, z), color: 0x8a8378 });
-      flat.push({ geometry: new THREE.CylinderGeometry(0.18, 0.25, 3, 6).translate(x, 2, z), color: 0x6b4f3a });
-      const s = rng.range(1.5, 1.9);
-      flat.push({ geometry: new THREE.IcosahedronGeometry(s, 0).translate(x, 3.9, z), color: [0x4caf50, 0x66bb6a, 0x7cb342][rng.int(0, 2)] });
-      ctx.addCollider(x, z, s * 0.9);
+      flat.push({ geometry: new THREE.CylinderGeometry(1.2, 1.1, 0.8, 14).translate(x, 0.4, z), color: [0xff8fb1, 0x7ecbff, 0xffd23f][rng.int(0, 2)] });
+      const s = rng.range(0.7, 0.85);
+      flat.push(...lollipopTree(THREE, rng, x, z, s, [0x5ad35a, 0x3fc15c, 0xff9ecf][rng.int(0, 2)]));
+      ctx.addCollider(x, z, 1.7);
     }
 
     // ---------- Avenues dont le centre est dans cette case ----------
@@ -147,7 +151,7 @@ export default {
       const c = local(k * AVE);
       // Marquage central et passage piéton avant le carrefour
       for (let z = -CROSS - 2; z > -L; z -= 9) flat.push({ geometry: box(0.25, 0.02, 3.5, c, 0.02, z - 1.75), color: 0xe9e6dd });
-      for (let x = c - AVE_HALF + 0.8; x < c + AVE_HALF; x += 1.4) flat.push({ geometry: box(0.7, 0.02, 3.5, x, 0.02, -CROSS - 2.2), color: 0xe9e6dd });
+      for (let x = c - AVE_HALF + 0.8, i = 0; x < c + AVE_HALF; x += 1.4, i++) flat.push({ geometry: box(0.7, 0.02, 3.5, x, 0.02, -CROSS - 2.2), color: [0xffffff, 0xffd23f, 0xff8fb1, 0x7ecbff][i % 4] });
       // Lampadaires des deux côtés
       for (const side of [-1, 1]) {
         for (let z = -CROSS - rng.range(3, 8); z > -L + 2; z -= 15) lamp(c + side * (AVE_HALF - 0.6), z, -side);
@@ -187,7 +191,7 @@ export default {
       const bc = local(k * AVE + AVE / 2);
       if (bc < -W / 2) continue;
       // Trottoir
-      flat.push({ geometry: box(blockW, 0.25, blockLen, bc, 0.12, -CROSS - blockLen / 2), color: 0x9c9a94 });
+      flat.push({ geometry: box(blockW, 0.25, blockLen, bc, 0.12, -CROSS - blockLen / 2), color: 0xe8e2f0 });
       // 2 × 3 parcelles
       for (let ci = 0; ci < 2; ci++) {
         for (let ri = 0; ri < 3; ri++) {
@@ -195,7 +199,7 @@ export default {
           const s = rng.range(9, 12.5);
           if (rng.chance(0.1) || !isFree(ctx, lx, lz, 0.72 * s)) {
             // Placette / square : herbe ou dalles, un arbre si possible
-            flat.push({ geometry: box(blockW / 2 - 1, 0.3, blockLen / 3 - 1, lx, 0.15, lz), color: rng.chance(0.6) ? 0x6fa84a : 0xb9b2a5 });
+            flat.push({ geometry: box(blockW / 2 - 1, 0.3, blockLen / 3 - 1, lx, 0.15, lz), color: rng.chance(0.6) ? 0x7fd65a : 0xffe0b3 });
             tree(lx + rng.range(-3, 3), lz + rng.range(-3, 3));
             continue;
           }

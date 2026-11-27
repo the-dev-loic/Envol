@@ -22,7 +22,7 @@ export const hud = {
       const b = document.createElement('button');
       b.className = 'mode';
       b.dataset.mode = name;
-      b.textContent = t.label;
+      b.innerHTML = `<span class="icon">${t.icon ?? '✨'}</span>${t.label}`;
       list.append(b);
     }
     for (const b of document.querySelectorAll('[data-mode]')) {
@@ -68,9 +68,11 @@ export const hud = {
   showOver(mode, distance, stageNumber) {
     const record = distance > this.best(mode);
     if (record) localStorage.setItem(bestKey(mode), String(distance));
+    const OOPS = ['Oups !', 'Aïe aïe aïe !', 'Badaboum !', 'Ouille !', 'Patatras !', 'Boing !'];
+    $('overTitle').textContent = OOPS[Math.floor(Math.random() * OOPS.length)];
     $('final').textContent = `${Math.floor(distance)} m`;
     $('overMode').textContent = mode === 'adventure' ? `Aventure · étape ${stageNumber}` : modeLabel(mode);
-    $('record').textContent = record ? 'Nouveau record !' : `Record : ${Math.floor(this.best(mode))} m`;
+    $('record').textContent = record ? '🎉 Nouveau record ! 🎉' : `🏆 Record : ${Math.floor(this.best(mode))} m`;
     $('over').hidden = false;
     $('hud').hidden = true;
   },

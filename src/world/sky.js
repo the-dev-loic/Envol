@@ -5,11 +5,12 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 
 const col = (h) => new THREE.Color(h);
-const NIGHT_TOP = col(0x03061a), NIGHT_HORIZON = col(0x121a36);
-const SUNSET_TOP = col(0x3d4a8f), SUNSET_HORIZON = col(0xff8f55);
-const DAY_BLUE = col(0x3f8fe0), WHITE = col(0xffffff);
-const OVERCAST = col(0x8e979f), FOGGY = col(0xc9cfd5);
-const MOONLIGHT = col(0x8ea6ff), DUSK_SUN = col(0xff8a4a), NIGHT_SKYLIGHT = col(0x5466a0);
+// Couleurs douces, façon dessin animé : la nuit est bleu-violet (jamais noire), le couchant rose-orangé.
+const NIGHT_TOP = col(0x1d2366), NIGHT_HORIZON = col(0x4a4fa8);
+const SUNSET_TOP = col(0x6b6fd6), SUNSET_HORIZON = col(0xff9ab0);
+const DAY_BLUE = col(0x4fc3ff), WHITE = col(0xffffff);
+const OVERCAST = col(0xa3adc2), FOGGY = col(0xe3e8f2);
+const MOONLIGHT = col(0xb9c6ff), DUSK_SUN = col(0xff9a6b), NIGHT_SKYLIGHT = col(0x8f9cf0);
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 export const WEATHER_LABEL = { clear: 'Beau temps', fog: 'Brouillard', rain: 'Pluie' };
@@ -47,18 +48,25 @@ export class Sky {
     }
     const sg = new THREE.BufferGeometry();
     sg.setAttribute('position', new THREE.BufferAttribute(p, 3));
-    this.starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.8, sizeAttenuation: false, transparent: true, fog: false, depthWrite: false });
+    this.starMat = new THREE.PointsMaterial({ color: 0xfff6b0, size: 3, sizeAttenuation: false, transparent: true, fog: false, depthWrite: false });
     this.stars = new THREE.Points(sg, this.starMat);
     this.stars.renderOrder = -9;
     this.stars.frustumCulled = false;
     this.group.add(this.stars);
 
     // Soleil et lune (disques lointains)
-    this.sunMat = new THREE.MeshBasicMaterial({ color: 0xfff1c2, fog: false, transparent: true, depthWrite: false });
-    this.sunDisc = new THREE.Mesh(new THREE.CircleGeometry(16, 24), this.sunMat);
-    this.moonMat = new THREE.MeshBasicMaterial({ color: 0xf2f0e4, fog: false, transparent: true, depthWrite: false });
-    this.moonDisc = new THREE.Mesh(new THREE.CircleGeometry(9, 20), this.moonMat);
+    this.sunMat = new THREE.MeshBasicMaterial({ map: faceTexture(THREE, 'sun'), fog: false, transparent: true, depthWrite: false });
+    this.sunDisc = new THREE.Mesh(new THREE.PlaneGeometry(56, 56), this.sunMat);
+    this.moonMat = new THREE.MeshBasicMaterial({ map: faceTexture(THREE, 'moon'), fog: false, transparent: true, depthWrite: false });
+    this.moonDisc = new THREE.Mesh(new THREE.PlaneGeometry(34, 34), this.moonMat);
     for (const m of [this.sunDisc, this.moonDisc]) { m.renderOrder = -8; this.group.add(m); }
+
+    // Gros nuages moelleux (un seul objet ; motif qui se répète, ancré au monde)
+    this.cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, transparent: true, opacity: 0.95, depthWrite: false });
+    this.clouds = new THREE.Mesh(cloudField(THREE), this.cloudMat);
+    this.clouds.frustumCulled = false;
+    this.clouds.renderOrder = -7;
+    scene.add(this.clouds);
 
     // Précipitations (positions relatives à la caméra)
     this.rain = this.makeRain();
@@ -130,10 +138,11 @@ export class Sky {
     // --- Heure ---
     this.time = (this.time + dt / cycle.dayLength) % 1;
     const a = (this.time - 0.25) * Math.PI * 2; // 6 h : lever, 12 h : zénith, 18 h : coucher
-    this.sunDir.set(-Math.cos(a) * 0.75, Math.sin(a), -0.65).normalize();
+    // Course du soleil assez basse et devant le joueur : on le voit dans le ciel pendant le vol.
+    this.sunDir.set(-Math.cos(a) * 0.8, Math.sin(a) * 0.42, -1).normalize();
     const elev = this.sunDir.y;
-    const day = smooth(-0.18, 0.22, elev);
-    const dusk = Math.max(0, 1 - Math.abs(elev) / 0.3) * smooth(-0.35, -0.05, elev);
+    const day = smooth(-0.1, 0.14, elev);
+    const dusk = Math.max(0, 1 - Math.abs(elev) / 0.16) * smooth(-0.2, -0.03, elev);
     this.day = day;
 
     // --- Météo ---
@@ -184,11 +193,19 @@ export class Sky {
     this.starMat.opacity = (1 - day) * (1 - grey);
     this.sunMat.opacity = smooth(-0.1, 0.05, elev) * (1 - grey);
     this.moonMat.opacity = smooth(0.05, -0.1, elev) * (1 - grey);
-    this.sunMat.color.copy(WHITE).lerp(DUSK_SUN, dusk * 0.6);
+    this.sunMat.color.copy(WHITE).lerp(DUSK_SUN, dusk * 0.4);
+    // Nuages : blancs le jour, roses au couchant, bleutés la nuit, gris sous la pluie
+    this.cloudMat.color.copy(WHITE).lerp(tmp3.setHex(0xffb3c8), dusk * 0.8).lerp(tmp3.setHex(0x7f86d6), 1 - day).lerp(tmp3.setHex(0xb8bfcc), grey * 0.7);
+    this.cloudMat.opacity = 0.95 - this.fog * 0.6;
+    if (this.camera) {
+      const P = CLOUD_PERIOD, c = this.camera.position;
+      this.clouds.position.set(Math.floor(c.x / P) * P, 0, Math.floor(c.z / P) * P);
+    }
     this.sunDisc.position.copy(this.sunDir).multiplyScalar(360);
     this.moonDisc.position.copy(moonDir).multiplyScalar(360);
-    this.sunDisc.lookAt(0, 0, 0);
-    this.moonDisc.lookAt(0, 0, 0);
+    if (this.camera) this.group.position.copy(this.camera.position);
+    this.sunDisc.lookAt(this.group.position);
+    this.moonDisc.lookAt(this.group.position);
 
     if (this.camera) this.group.position.copy(this.camera.position);
     this.snowy = base.precipitation === 'snow';
@@ -220,6 +237,76 @@ export class Sky {
       s.g.attributes.position.needsUpdate = true;
     }
   }
+}
+
+const CLOUD_PERIOD = 300;
+
+/** Champ de nuages : grappes de boules, répété sur 3 × 3 périodes autour de l'oiseau. */
+function cloudField(THREE) {
+  const geos = [];
+  let seed = 3;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const P = CLOUD_PERIOD;
+  const layout = [];
+  for (let i = 0; i < 11; i++) layout.push([rnd() * P, 34 + rnd() * 22, rnd() * P, 0.8 + rnd() * 0.9]);
+  for (let gx = -1; gx <= 1; gx++) for (let gz = -1; gz <= 1; gz++) {
+    for (const [x, y, z, s] of layout) {
+      for (let k = 0; k < 5; k++) {
+        const r = (6 + rnd() * 5) * s;
+        const g = new THREE.SphereGeometry(r, 8, 5).scale(1, 0.75, 1).translate(gx * P + x + (k - 2) * 7 * s, y + rnd() * 4, gz * P + z + (rnd() - 0.5) * 8);
+        geos.push(g);
+      }
+    }
+  }
+  // fusion simple (positions seulement)
+  let n = 0; for (const g of geos) n += g.index.count;
+  const pos = [], idx = new Uint32Array(n);
+  let v = 0, i = 0;
+  for (const g of geos) {
+    pos.push(...g.attributes.position.array);
+    for (const k of g.index.array) idx[i++] = k + v;
+    v += g.attributes.position.count;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setIndex(new THREE.BufferAttribute(idx, 1));
+  return out;
+}
+
+/** Soleil souriant / lune qui dort, dessinés sur un canvas. */
+function faceTexture(THREE, kind) {
+  const S = 256, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  const cx = S / 2, cy = S / 2;
+  if (kind === 'sun') {
+    g.fillStyle = '#ffd84d';
+    for (let i = 0; i < 12; i++) { // rayons arrondis
+      const a = (i / 12) * Math.PI * 2;
+      g.save(); g.translate(cx, cy); g.rotate(a);
+      g.beginPath(); g.roundRect(-9, -122, 18, 40, 9); g.fill(); g.restore();
+    }
+    g.fillStyle = '#ffe36e'; g.beginPath(); g.arc(cx, cy, 76, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(cx, cy + 6, 70, 0.1 * Math.PI, 0.9 * Math.PI); g.fill();
+    g.fillStyle = '#5a3a1a';
+    for (const dx of [-24, 24]) { g.beginPath(); g.ellipse(cx + dx, cy - 12, 7, 10, 0, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#ff9eb0';
+    for (const dx of [-44, 44]) { g.beginPath(); g.arc(cx + dx, cy + 14, 11, 0, Math.PI * 2); g.fill(); }
+    g.strokeStyle = '#5a3a1a'; g.lineWidth = 6; g.lineCap = 'round';
+    g.beginPath(); g.arc(cx, cy + 8, 24, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+  } else {
+    g.fillStyle = '#fff6c9'; g.beginPath(); g.arc(cx, cy, 100, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#f3e6a6';
+    for (const [x, y, r] of [[-40, -45, 16], [45, 35, 12], [-20, 55, 9]]) { g.beginPath(); g.arc(cx + x, cy + y, r, 0, Math.PI * 2); g.fill(); }
+    g.strokeStyle = '#6b5b3a'; g.lineWidth = 6; g.lineCap = 'round';
+    for (const dx of [-30, 30]) { g.beginPath(); g.arc(cx + dx, cy - 8, 13, 0.1 * Math.PI, 0.9 * Math.PI); g.stroke(); } // yeux fermés
+    g.beginPath(); g.arc(cx, cy + 22, 14, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+    g.fillStyle = '#ffb3c1';
+    for (const dx of [-52, 52]) { g.beginPath(); g.arc(cx + dx, cy + 12, 12, 0, Math.PI * 2); g.fill(); }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 const tmp1 = new THREE.Color(), tmp2 = new THREE.Color(), tmp3 = new THREE.Color();

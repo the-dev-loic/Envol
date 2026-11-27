@@ -21,10 +21,10 @@
 - v0.6 : sol texturé + détails (herbe, fleurs, cailloux, cactus…), ciel en dégradé avec soleil/lune/étoiles, cycle jour/nuit, météo (brouillard, pluie, neige)
 - v0.7 : monde ouvert sans mur (grille de cases infinie à gauche/droite), monde différent à chaque partie, ville en quadrillage d'avenues
 - v0.8 : inclinaison au sens mesuré physiquement + option « sens inversé », version affichée, jouable entièrement au clavier sur ordinateur
+- v0.9 : refonte graphique enfantine (ombrage cartoon, couleurs bonbon, arbres sucettes, champignons à pois, bonshommes de neige, pingouins, ville pastel, soleil/lune avec visage, nuages, ailes et bec visibles, interface « gommes »)
 
 ## Idées suivantes (suite)
 1. Bouton « recalibrer » + réglage de sensibilité dans le menu (le choix des commandes existe déjà)
-2. Ailes/bec visibles en bas de l'écran (sentiment d'être l'oiseau)
 3. Bonus à ramasser (anneaux, plumes) et pièces
 4. Monter/descendre (inclinaison avant/arrière) + obstacles à différentes hauteurs
 5. Sons (vent qui augmente avec la vitesse, pluie, collision) — audio iOS à débloquer par un tap
