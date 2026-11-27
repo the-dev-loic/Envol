@@ -5,11 +5,11 @@
 // Pourquoi un vecteur "haut" plutôt que gamma directement ?
 // - gamma saute brutalement (±90°) quand on incline fort ou qu'on tient le téléphone droit ;
 // - iOS peut faire pivoter l'écran en paysage en cours de partie, ce qui changeait l'axe lu.
-// On reconstruit donc la direction de la gravité (continue, sans saut). Le jeu reste toujours
-// en portrait par rapport au téléphone (src/core/orientation.js), donc l'axe gauche/droite
-// est toujours l'axe X du téléphone.
+// On reconstruit donc la direction de la gravité (continue, sans saut). Le jeu est toujours
+// en paysage (src/core/orientation.js) : l'axe gauche/droite du jeu est l'axe Y du téléphone,
+// dans un sens ou l'autre selon le côté où on tient le téléphone.
 import { CONFIG } from '../config.js';
-import { rotation } from '../core/orientation.js';
+import { gameAngle, isForced } from '../core/orientation.js';
 
 const D2R = Math.PI / 180;
 const R2D = 180 / Math.PI;
@@ -28,9 +28,10 @@ function onOrientation(e) {
   up.z = Math.cos(b) * Math.cos(g);
 }
 
-/** Inclinaison gauche/droite en degrés (axe X du téléphone, tenu en portrait). */
+/** Inclinaison gauche/droite en degrés, dans le repère du jeu (paysage). */
 function lateralDeg() {
-  return Math.asin(Math.max(-1, Math.min(1, -up.x))) * R2D;
+  const v = gameAngle() === -90 ? -up.y : up.y;
+  return Math.asin(Math.max(-1, Math.min(1, v))) * R2D;
 }
 
 /** À appeler depuis un geste utilisateur (tap) : iOS l'exige. */
@@ -81,9 +82,9 @@ window.addEventListener('keyup', (e) => { keys.delete(e.key); updateKeys(); });
 function onTouch(e) {
   if (hasTilt) { touchAxis = 0; return; }
   let axis = 0;
-  const r = rotation(); // le jeu peut être tourné : on ramène le toucher dans le repère du jeu
+  // Le jeu peut être tourné de 90° : on ramène le toucher dans le repère du jeu.
   for (const t of e.touches) {
-    const x = r === 90 ? 1 - t.clientY / window.innerHeight : r === -90 ? t.clientY / window.innerHeight : t.clientX / window.innerWidth;
+    const x = isForced() ? 1 - t.clientY / window.innerHeight : t.clientX / window.innerWidth;
     axis += x < 0.5 ? -1 : 1;
   }
   touchAxis = Math.max(-1, Math.min(1, axis));

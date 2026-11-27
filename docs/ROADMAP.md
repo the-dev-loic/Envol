@@ -15,7 +15,7 @@
 - Couloir sûr garanti (toujours un chemin possible), records par mode
 
 ## Idées suivantes (par ordre suggéré)
-- v0.3 : écran verrouillé en portrait (contre-rotation, iOS ne sait pas verrouiller)
+- v0.3 : jeu verrouillé en paysage (rotation CSS si le téléphone est en portrait ; iOS ne sait pas verrouiller), menu adapté
 
 ## Idées suivantes (suite)
 1. Bouton « recalibrer » + réglage de sensibilité dans le menu

@@ -46,5 +46,5 @@ export const CONFIG = {
     bobFrequency: 2.2,
   },
 
-  camera: { fov: 78, near: 0.1, far: 420 },
+  camera: { fov: 55, near: 0.1, far: 420 }, // fov vertical (jeu en paysage)
 };

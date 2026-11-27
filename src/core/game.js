@@ -7,7 +7,7 @@ import { createPlan } from '../world/stages.js';
 import { getTheme } from '../world/themes/index.js';
 import { enableTilt, calibrate, getSteer } from '../input/tilt.js';
 import { hud, modeLabel } from '../ui/hud.js';
-import { applyPortrait, viewportSize, tryNativeLock } from './orientation.js';
+import { applyLandscape, viewportSize, tryNativeLock } from './orientation.js';
 
 export class Game {
   constructor(canvas) {
@@ -40,7 +40,7 @@ export class Game {
   }
 
   resize() {
-    applyPortrait();
+    applyLandscape();
     const { w, h } = viewportSize();
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;

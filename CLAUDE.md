@@ -1,4 +1,4 @@
-# Envol — jeu d'oiseau en vue subjective (PWA iPhone)
+# Envol — jeu d'oiseau en vue subjective (PWA iPhone, en PAYSAGE)
 
 **À lire en premier. Ne relire le code que des fichiers concernés par la tâche.**
 
@@ -23,9 +23,9 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/config.js` | **Tous les réglages** (vitesse, sensibilité, largeur, hauteur…) | équilibrage, ressenti |
 | `src/main.js` | Point d'entrée, boutons, service worker | rarement |
 | `src/core/game.js` | Boucle, états `menu/playing/over`, mode, bannière d'étape, collisions, recentrage | règles du jeu, nouveaux états |
-| `src/core/orientation.js` | Garde le jeu en portrait : contre-rotation CSS de `#app` si iOS pivote l'écran (`viewportSize()` = taille portrait) | orientation |
+| `src/core/orientation.js` | Garde le jeu en **paysage** : si l'écran est en portrait, `#app` est tourné de -90° (`viewportSize()` = taille paysage, `gameAngle()` = 90/-90) | orientation |
 | `src/core/rng.js` | Aléatoire déterministe par tronçon | — |
-| `src/input/tilt.js` | Inclinaison iOS (vecteur gravité continu, toujours axe X du téléphone) + secours clavier/tactile → `getSteer()` ∈ [-1,1] | contrôles |
+| `src/input/tilt.js` | Inclinaison iOS (vecteur gravité continu, axe Y du téléphone, sens selon `gameAngle()`) + secours clavier/tactile → `getSteer()` ∈ [-1,1] | contrôles |
 | `src/player/bird.js` | Caméra = oiseau : avance, latéral, roulis, battement, FOV vitesse | sensations de vol |
 | `src/world/world.js` | Tronçons infinis, colliders, obstacles mobiles, transition d'ambiance entre thèmes, recentrage | génération générale |
 | `src/world/stages.js` | Plan de partie : thème + n° d'étape pour chaque tronçon | modes, enchaînement des étapes |
@@ -65,6 +65,6 @@ Chrome headless + puppeteer-core : servir le dossier, cliquer `[data-mode=advent
 
 ## Pièges iOS
 - `DeviceOrientationEvent.requestPermission()` doit être appelé dans un tap → fait dans `Game.start()`.
-- iOS ne sait pas verrouiller l'orientation (ni `screen.orientation.lock`, ni manifest) → `orientation.js` tourne `#app` en sens inverse. Tout l'UI doit vivre dans `#app` (positions `absolute`, pas `fixed`) et utiliser `viewportSize()` plutôt que `innerWidth/innerHeight`.
+- iOS ne sait pas verrouiller l'orientation (ni `screen.orientation.lock`, ni manifest) → `orientation.js` tourne `#app` pour rester en paysage (les 2 sens de paysage sont acceptés). Tout l'UI doit vivre dans `#app` (positions `absolute`, pas `fixed`) et utiliser `viewportSize()` plutôt que `innerWidth/innerHeight`.
 - L'inclinaison ne marche qu'en HTTPS. iOS ignore `display: fullscreen` → mode `standalone` (plein écran sans barre Safari).
 - Après une mise en ligne, l'app installée récupère la nouvelle version au lancement suivant (réseau d'abord).
