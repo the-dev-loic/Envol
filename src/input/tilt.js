@@ -33,7 +33,8 @@ function onOrientation(e) {
 
 /** Inclinaison gauche/droite en degrés, dans le repère du jeu (paysage). */
 function lateralDeg() {
-  const v = gameAngle() === -90 ? -up.y : up.y;
+  // Sens vérifié sur iPhone : pencher le bord droit vers le bas = aller à droite.
+  const v = gameAngle() === -90 ? up.y : -up.y;
   return Math.asin(Math.max(-1, Math.min(1, v))) * R2D;
 }
 

@@ -3,7 +3,7 @@
 // - Ensuite : on essaie le réseau (pour avoir la dernière version) avec un délai court,
 //   et sinon on sert la copie en cache → le jeu se lance en mode avion.
 // La liste FILES et la version CACHE sont générées par :  python3 tools/update-sw.py
-const CACHE = 'envol-8a7948b0a3';
+const CACHE = 'envol-fa7852c2d5';
 const FILES = [
   './',
   './icons/icon-180.png',
