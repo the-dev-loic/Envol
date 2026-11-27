@@ -18,6 +18,7 @@ export class Game {
     this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
     this.bird = new Bird(this.camera);
     this.world = new World(this.scene);
+    this.world.setCamera(this.camera);
     this.mode = localStorage.getItem('birdrun.mode') || 'adventure';
     this.state = 'menu';
     this.stageNumber = 1;
@@ -102,10 +103,10 @@ export class Game {
         this.world.rebase(off);
         this.bird.apply();
       }
-      this.world.update(this.bird.z, dt);
+      this.world.update(this.bird.z, dt, this.bird.speed);
       this.checkStage();
       if (this.world.collides(this.bird.x, this.bird.z, CONFIG.bird.hitRadius)) this.gameOver();
-      hud.update(this.bird.distance, this.bird.speed);
+      hud.update(this.bird.distance, this.bird.speed, this.world.sky);
     } else {
       // Au menu / en fin de partie : léger battement d'ailes, obstacles mobiles animés.
       this.bird.time += dt;

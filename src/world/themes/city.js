@@ -4,6 +4,7 @@
 // Tout le décor fixe d'un tronçon est fusionné en quelques géométries (merge.js) → peu d'appels de rendu.
 import { ground, instances, scatter, wallWithGap, mover } from '../obstacles.js';
 import { mergeColored } from '../merge.js';
+import { groundMaterial, detail } from '../ground.js';
 
 const FACADES = [0xf1e3cf, 0xe0a98f, 0xb5c4d4, 0xd8d0c2, 0x9fb7ae, 0xf2cf91, 0xc9b6d6];
 const ADS = [0xff5e5b, 0x2ec4b6, 0xffd23f, 0x7b61ff, 0xff8c42];
@@ -105,7 +106,10 @@ export default {
   createAssets(THREE) {
     const { map, glow } = facadeTextures(THREE);
     return {
-      groundMat: new THREE.MeshLambertMaterial({ color: 0x45484f }),
+      groundMat: groundMaterial(THREE, {
+        base: 0x46494f, blotches: [0x3c3f45, 0x52555c, 0x41444a, 0x37393e], specks: [0x5c5f66, 0x34363b, 0x6a6d73],
+        cracks: 30, speckCount: 9000, speckSize: 1.4, tile: 12,
+      }, 41),
       buildingMat: new THREE.MeshLambertMaterial({ map, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: 0.85, vertexColors: true }),
       flatMat: new THREE.MeshLambertMaterial({ vertexColors: true }),
       lampHead: new THREE.BoxGeometry(0.9, 0.25, 0.5),
@@ -140,6 +144,7 @@ export default {
     for (const lane of [-hw / 2, hw / 2]) {
       for (let z = -1; z > -L; z -= 9) street.push({ geometry: box(0.25, 0.02, 3.5, lane, 0.02, z - 1.75), color: 0xe9e6dd });
     }
+    for (let i = rng.int(1, 3); i > 0; i--) street.push(...detail.manhole(THREE, rng, rng.range(-hw + 3, hw - 3), -rng.range(2, L - 2)));
     if (rng.chance(0.35)) {
       const z = -rng.range(10, L - 10);
       for (let x = -hw + 1; x < hw; x += 1.6) street.push({ geometry: box(0.8, 0.02, 4, x, 0.02, z), color: 0xe9e6dd });

@@ -30,6 +30,8 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/player/bird.js` | Caméra = oiseau : avance, latéral, roulis, battement, FOV vitesse | sensations de vol |
 | `src/world/world.js` | Tronçons infinis, colliders, obstacles mobiles, transition d'ambiance entre thèmes, recentrage | génération générale |
 | `src/world/stages.js` | Plan de partie : thème + n° d'étape pour chaque tronçon | modes, enchaînement des étapes |
+| `src/world/sky.js` | Ciel en dégradé, soleil/lune/étoiles, **cycle jour/nuit**, **météo** (beau, brouillard, pluie / neige), précipitations. `world.sky.set({time, weather})` pour tester | ambiance, météo |
+| `src/world/ground.js` | Sol : `groundMaterial()` (texture procédurale sans image) + petits détails `detail.*` / `sowDetails()` (touffes, fleurs, cailloux, champignons, cactus…) | rendu du sol |
 | `src/world/merge.js` | `mergeColored()` : fusionne des pièces colorées en 1 géométrie (1 appel de rendu par tronçon) | décor riche (ville, campagne) |
 | `src/world/obstacles.js` | Briques pour les thèmes : `scatter`, `wallWithGap`, `borders`, `instances`, `mover`, couloir sûr `safeX`/`isFree` | nouveaux types d'obstacles |
 | `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon, snow, city (façades à fenêtres, boulevard) | nouveaux mondes |
@@ -40,7 +42,7 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 ## Contrat d'un thème (pour « modifier le monde »)
 ```js
 export default {
-  name, label: 'Nom affiché', sky: 0xRRGGBB, fog: { near, far },
+  name, label: 'Nom affiché', sky: 0xRRGGBB, fog: { near, far }, precipitation?: 'rain' | 'snow',
   light: { sky, ground, sun },              // couleurs des lumières (transition douce entre thèmes)
   createAssets(THREE) -> {...},             // géométries/matériaux, créés une fois à la 1re utilisation
   populateChunk(ctx)                        // remplit UN tronçon
@@ -55,16 +57,19 @@ export default {
   Placer les obstacles fixes via `scatter`/`wallWithGap` (ou vérifier `isFree`). Les mobiles peuvent le croiser.
 - Perf : `instances()` (InstancedMesh) pour les objets répétés, ou `mergeColored()` pour fusionner tout le décor d'un tronçon. `ctx.rng` toujours (jamais `Math.random`).
 - Obstacle qu'on traverse (grange) : poser ses colliders à la main autour du couloir sûr (`safeX`) et réserver sa zone pour que `scatter` ne mette rien dedans (voir country.js).
+- Sol : `groundMat: groundMaterial(THREE, { base, blotches, specks, blades?, cracks? }, seed)` + détails semés avec `sowDetails`.
+- L'heure et la météo modifient l'ambiance du thème (sky.js) : le thème donne seulement ses couleurs « de jour par beau temps ».
 - Nouveau thème : créer le fichier, l'ajouter dans `themes/index.js` (et `CONFIG.stages.order` pour l'Aventure).
 
 ## Tests
 Chrome headless + puppeteer-core : servir le dossier, cliquer `[data-mode=adventure]`, puis autopilote
-`bird.x = safeX(bird.distance)` sur ~8 km → doit donner 0 collision avec les obstacles fixes.
+`bird.x = safeX(bird.distance)` sur ~10 km → doit donner 0 collision avec les obstacles fixes.
+Hors connexion : `page.setOfflineMode(true)` puis recharger → le menu doit s'afficher et une partie démarrer.
 
 ## Conventions
 - Axe d'avance : **-Z**. L'oiseau garde `y = CONFIG.bird.height`.
 - Toute valeur réglable va dans `config.js`, pas en dur.
-- Budget perf : viser ~60 draw calls max (mesuré : 64 au pire en Aventure) (`__game.renderer.info.render.calls` en console).
+- Budget perf : viser ≤ 90 draw calls (mesuré : 79 au pire en Aventure) (`__game.renderer.info.render.calls` en console).
 - Après une modif : mettre à jour la carte ci-dessus si un fichier est ajouté, et `docs/ROADMAP.md`.
 - `window.__game` exposé pour le debug.
 

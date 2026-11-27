@@ -1,5 +1,7 @@
 // Thème "Neige" : sapins enneigés, pics de glace en rangées, boules de neige mobiles.
 import { ground, instances, scatter, wallWithGap, borders, mover } from '../obstacles.js';
+import { groundMaterial, detail, sowDetails } from '../ground.js';
+import { mergeColored } from '../merge.js';
 
 const PINES = [0x1f4d3a, 0x24543f, 0x2c5e47];
 
@@ -7,6 +9,7 @@ export default {
   name: 'snow',
   label: 'Montagnes enneigées',
   sky: 0xdce8f2,
+  precipitation: 'snow',
   fog: { near: 40, far: 300 },
   light: { sky: 0xffffff, ground: 0x9fb4c8, sun: 0xf0f6ff },
 
@@ -18,7 +21,10 @@ export default {
       spike: new THREE.ConeGeometry(1, 9, 5).translate(0, 4.5, 0),
       mountain: new THREE.ConeGeometry(28, 70, 6).translate(0, 35, 0),
       ball: new THREE.IcosahedronGeometry(1.6, 1),
-      groundMat: new THREE.MeshLambertMaterial({ color: 0xf2f6fa }),
+      groundMat: groundMaterial(THREE, {
+        base: 0xeef3f8, blotches: [0xdfe8f1, 0xffffff, 0xd3deea, 0xe8eef6], specks: [0xc8d6e6, 0xffffff, 0xb9cadc], speckCount: 3000,
+      }, 37),
+      detailMat: new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
       trunkMat: new THREE.MeshLambertMaterial({ color: 0x5d4037 }),
       crownMat: new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
       snowMat: new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
@@ -69,5 +75,19 @@ export default {
     instances(ctx, a.crown, a.crownMat, trees);
     instances(ctx, a.cap, a.snowMat, trees.map(({ color, ...t }) => t));
     instances(ctx, a.spike, a.iceMat, spikes);
+
+    // Détails au sol (fusionnés : 1 seul appel de rendu)
+    const det = [];
+    const { THREE: T } = ctx;
+    sowDetails(ctx, det, 60, [
+      (x, z) => detail.mound(T, rng, x, z),
+      (x, z) => detail.mound(T, rng, x, z),
+      (x, z) => detail.pebble(T, rng, x, z, 0x6d7680),
+      (x, z) => detail.bush(T, rng, x, z, 0x2c5e47),
+    ]);
+    const detMesh = new T.Mesh(mergeColored(T, det), a.detailMat);
+    ctx.group.add(detMesh);
+    ctx.track(detMesh.geometry);
+
   },
 };

@@ -1,5 +1,7 @@
 // Thème "Forêt" : sapins, gros rochers, rangées d'arbres avec un passage.
 import { ground, instances, scatter, wallWithGap, borders } from '../obstacles.js';
+import { groundMaterial, detail, sowDetails } from '../ground.js';
+import { mergeColored } from '../merge.js';
 
 const GREENS = [0x2f7d32, 0x388e3c, 0x43a047, 0x1b5e20, 0x558b2f];
 
@@ -16,7 +18,10 @@ export default {
     const rock = new THREE.DodecahedronGeometry(2.2, 0);
     return {
       trunk, crown, rock,
-      groundMat: new THREE.MeshLambertMaterial({ color: 0x7cb342 }),
+      groundMat: groundMaterial(THREE, {
+        base: 0x6f9e3e, blotches: [0x5c8a32, 0x7fae4a, 0x8a7a45, 0x4f7a2c, 0x6b5a35], specks: [0x3f6a24, 0x9cc45c, 0x8b6b3e], blades: true,
+      }, 11),
+      detailMat: new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
       trunkMat: new THREE.MeshLambertMaterial({ color: 0x6d4c41, flatShading: true }),
       crownMat: new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
       rockMat: new THREE.MeshLambertMaterial({ color: 0x8d8d86, flatShading: true }),
@@ -57,5 +62,21 @@ export default {
     instances(ctx, a.trunk, a.trunkMat, trees.map(({ color, ...t }) => t));
     instances(ctx, a.crown, a.crownMat, trees);
     instances(ctx, a.rock, a.rockMat, rocks);
+
+    // Détails au sol (fusionnés : 1 seul appel de rendu)
+    const det = [];
+    const { THREE: T } = ctx;
+    sowDetails(ctx, det, 110, [
+      (x, z) => detail.tuft(T, rng, x, z, 0x4f8a2b),
+      (x, z) => detail.tuft(T, rng, x, z, 0x6a9f3a),
+      (x, z) => detail.bush(T, rng, x, z, 0x3f7a2a),
+      (x, z) => detail.mushroom(T, rng, x, z),
+      (x, z) => detail.pebble(T, rng, x, z, 0x8d8d86),
+      (x, z) => detail.flower(T, rng, x, z, rng.chance(0.5) ? 0xffffff : 0xffd54f),
+    ]);
+    const detMesh = new T.Mesh(mergeColored(T, det), a.detailMat);
+    ctx.group.add(detMesh);
+    ctx.track(detMesh.geometry);
+
   },
 };

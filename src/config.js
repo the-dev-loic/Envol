@@ -46,5 +46,22 @@ export const CONFIG = {
     bobFrequency: 2.2,
   },
 
+  // Cycle jour/nuit : time 0 = minuit, 0.25 = 6 h, 0.5 = midi, 0.75 = 18 h
+  cycle: {
+    dayLength: 240,          // durée d'une journée complète, en secondes de jeu
+    start: 0.37,             // heure au début de chaque partie (≈ 9 h)
+  },
+
+  weather: {
+    odds: { clear: 0.5, fog: 0.2, rain: 0.3 }, // chances relatives (neige au lieu de pluie dans les mondes enneigés)
+    firstChange: 35,         // secondes de beau temps au début d'une partie
+    minDuration: 25,         // durée d'un épisode météo (s)
+    maxDuration: 55,
+    transition: 6,           // durée du fondu entre deux météos (s)
+    fogNear: 8,              // brouillard : distance de vue
+    fogFar: 135,
+    rainFarFactor: 0.65,     // pluie : la vue est réduite de 35 %
+  },
+
   camera: { fov: 55, near: 0.1, far: 420 }, // fov vertical (jeu en paysage)
 };

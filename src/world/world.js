@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { createRng, hash } from '../core/rng.js';
 import { getTheme } from './themes/index.js';
+import { Sky } from './sky.js';
 
 export class World {
   constructor(scene, seed = 1) {
@@ -27,6 +28,17 @@ export class World {
     scene.add(this.hemi, this.sun);
     scene.background = new THREE.Color();
     scene.fog = new THREE.Fog(0xffffff, 60, 380);
+    // Ambiance "de base" du thème courant (glisse d'un thème à l'autre), puis ciel/heure/météo par-dessus.
+    this.base = {
+      sky: new THREE.Color(), near: 60, far: 380, hemiSky: new THREE.Color(),
+      hemiGround: new THREE.Color(), sunColor: new THREE.Color(), precipitation: 'rain',
+    };
+    this.sky = new Sky(scene, this.hemi, this.sun);
+    this.speed = 0;
+  }
+
+  setCamera(camera) {
+    this.sky.camera = camera;
   }
 
   setPlan(plan) {
@@ -37,7 +49,8 @@ export class World {
     for (const i of [...this.chunks.keys()]) this.removeChunk(i);
     this.shift = 0;
     this.time = 0;
-    this.updateAtmosphere(0, 1);
+    this.sky.reset();
+    this.updateAtmosphere(0, 1, 0);
   }
 
   /** Index du tronçon à une position z locale. */
@@ -49,7 +62,8 @@ export class World {
     return this.plan.stageAt(Math.max(0, this.indexAt(z)));
   }
 
-  update(playerZ, dt) {
+  update(playerZ, dt, speed = 0) {
+    this.speed = speed;
     const { chunksAhead, chunksBehind } = CONFIG.world;
     const cur = this.indexAt(playerZ);
     for (let i = cur - chunksBehind; i <= cur + chunksAhead; i++) {
@@ -60,7 +74,7 @@ export class World {
     }
     this.time += dt;
     this.updateMovers(dt);
-    this.updateAtmosphere(playerZ, Math.min(1, dt * 0.8));
+    this.updateAtmosphere(playerZ, Math.min(1, dt * 0.8), dt);
   }
 
   updateMovers(dt) {
@@ -75,16 +89,17 @@ export class World {
     }
   }
 
-  updateAtmosphere(playerZ, t) {
+  updateAtmosphere(playerZ, t, dt) {
     const theme = getTheme(this.stageAt(playerZ).theme);
-    const s = this.scene;
-    s.background.lerp(tmp.setHex(theme.sky), t);
-    s.fog.color.copy(s.background);
-    s.fog.near += (theme.fog.near - s.fog.near) * t;
-    s.fog.far += (theme.fog.far - s.fog.far) * t;
-    this.hemi.color.lerp(tmp.setHex(theme.light.sky), t);
-    this.hemi.groundColor.lerp(tmp.setHex(theme.light.ground), t);
-    this.sun.color.lerp(tmp.setHex(theme.light.sun), t);
+    const b = this.base;
+    b.sky.lerp(tmp.setHex(theme.sky), t);
+    b.near += (theme.fog.near - b.near) * t;
+    b.far += (theme.fog.far - b.far) * t;
+    b.hemiSky.lerp(tmp.setHex(theme.light.sky), t);
+    b.hemiGround.lerp(tmp.setHex(theme.light.ground), t);
+    b.sunColor.lerp(tmp.setHex(theme.light.sun), t);
+    b.precipitation = theme.precipitation ?? 'rain';
+    this.sky.update(dt, b, this.speed);
   }
 
   assetsFor(theme) {

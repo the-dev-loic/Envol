@@ -1,6 +1,8 @@
 // Thème "Canyon" : piliers de roche, arches à franchir, rochers qui roulent.
 import { ground, instances, scatter, borders, mover, safeX } from '../obstacles.js';
 import { CONFIG } from '../../config.js';
+import { groundMaterial, detail, sowDetails } from '../ground.js';
+import { mergeColored } from '../merge.js';
 
 const ROCKS = [0xc1693c, 0xb35a30, 0xd27d4a, 0xa94f2a];
 
@@ -17,7 +19,10 @@ export default {
       mesa: new THREE.CylinderGeometry(9, 12, 34, 6).translate(0, 17, 0),
       lintel: new THREE.BoxGeometry(1, 2.2, 3).translate(0, 9, 0),
       boulder: new THREE.IcosahedronGeometry(1.8, 0),
-      groundMat: new THREE.MeshLambertMaterial({ color: 0xd99a5f }),
+      groundMat: groundMaterial(THREE, {
+        base: 0xd69a62, blotches: [0xc4844e, 0xe2b07a, 0xb9703f, 0xd8a46c], specks: [0x9e5f33, 0xf0c792, 0xb87a48], cracks: 28,
+      }, 23),
+      detailMat: new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
       rockMat: new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
       boulderMat: new THREE.MeshLambertMaterial({ color: 0x8a4b2a, flatShading: true }),
     };
@@ -62,5 +67,19 @@ export default {
     instances(ctx, a.mesa, a.rockMat, mesas);
     instances(ctx, a.pillar, a.rockMat, pillars);
     instances(ctx, a.lintel, a.rockMat, lintels);
+
+    // Détails au sol (fusionnés : 1 seul appel de rendu)
+    const det = [];
+    const { THREE: T } = ctx;
+    sowDetails(ctx, det, 70, [
+      (x, z) => detail.pebble(T, rng, x, z, 0xa8693e),
+      (x, z) => detail.pebble(T, rng, x, z, 0x8a5636),
+      (x, z) => detail.cactus(T, rng, x, z),
+      (x, z) => detail.bush(T, rng, x, z, 0x9a7b4f),
+    ]);
+    const detMesh = new T.Mesh(mergeColored(T, det), a.detailMat);
+    ctx.group.add(detMesh);
+    ctx.track(detMesh.geometry);
+
   },
 };

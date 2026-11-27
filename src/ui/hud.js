@@ -46,9 +46,13 @@ export const hud = {
     $('hud').hidden = false;
   },
 
-  update(distance, speed) {
+  update(distance, speed, sky) {
     $('dist').textContent = `${Math.floor(distance)} m`;
     $('speed').textContent = `${Math.round(speed * 3.6)} km/h`;
+    if (sky) {
+      const icon = sky.weather === 'rain' ? (sky.snowy ? '🌨️' : '🌧️') : sky.weather === 'fog' ? '🌫️' : sky.isNight() ? '🌙' : '☀️';
+      $('clock').textContent = `${icon} ${sky.clock()}`;
+    }
   },
 
   banner(title, subtitle = '') {

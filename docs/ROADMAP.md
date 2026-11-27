@@ -18,12 +18,13 @@
 - v0.3 : jeu verrouillé en paysage (rotation CSS si le téléphone est en portrait ; iOS ne sait pas verrouiller), menu adapté
 - v0.4 : autorisation des mouvements demandée une seule fois par lancement (au 1er toucher) + choix mémorisé « Commandes : inclinaison / toucher »
 - v0.5 : ville refaite (façades à fenêtres éclairées, boulevard, panneaux, arbres), monde Campagne (granges à traverser, moulins, silos, meules, animaux, champs), jeu jouable sans connexion
+- v0.6 : sol texturé + détails (herbe, fleurs, cailloux, cactus…), ciel en dégradé avec soleil/lune/étoiles, cycle jour/nuit, météo (brouillard, pluie, neige)
 
 ## Idées suivantes (suite)
 1. Bouton « recalibrer » + réglage de sensibilité dans le menu (le choix des commandes existe déjà)
 2. Ailes/bec visibles en bas de l'écran (sentiment d'être l'oiseau)
 3. Bonus à ramasser (anneaux, plumes) et pièces
 4. Monter/descendre (inclinaison avant/arrière) + obstacles à différentes hauteurs
-5. Sons (vent qui augmente avec la vitesse, collision) — audio iOS à débloquer par un tap
+5. Sons (vent qui augmente avec la vitesse, pluie, collision) — audio iOS à débloquer par un tap
 6. Débloquer les mondes en mode libre seulement après les avoir atteints en Aventure
 7. Publication App Store (enveloppe Capacitor) — plus tard

@@ -4,6 +4,7 @@
 // Presque tout le décor d'un tronçon est fusionné en une seule géométrie (merge.js).
 import { ground, scatter, wallWithGap, mover, safeX } from '../obstacles.js';
 import { mergeColored } from '../merge.js';
+import { groundMaterial, detail, sowDetails } from '../ground.js';
 
 const CROPS = [0xe9c46a, 0x9ccc65, 0xd4a373, 0xb5a1e0, 0x7cb342];
 const BARN = { w: 12, d: 12, h: 7, doorHalf: 3.4, doorH: 6 };
@@ -31,7 +32,9 @@ export default {
       flock.push({ geometry: new THREE.ConeGeometry(0.08, 0.25, 4).rotateX(-Math.PI / 2).translate(x, y, z + 0.45), color: 0xf2a33a });
     }
     return {
-      groundMat: new THREE.MeshLambertMaterial({ color: 0x8cc152 }),
+      groundMat: groundMaterial(THREE, {
+        base: 0x86c04e, blotches: [0x78b043, 0x95cc5c, 0xa7c95a, 0x6ea33e, 0xb3c95e], specks: [0x5c9634, 0xb5dc74, 0xd9e27a], blades: true,
+      }, 53),
       flatMat,
       blades: mergeColored(THREE, blades),
       flock: mergeColored(THREE, flock),
@@ -244,6 +247,16 @@ export default {
     } else {
       for (let i = rng.int(2, 4); i > 0; i--) animal(rng.range(-hw + 2, hw - 2), -rng.range(2, L - 2));
     }
+
+    // Herbes, fleurs des champs, cailloux
+    const FLOWERS = [0xffffff, 0xffeb3b, 0xe91e63, 0x9c27b0, 0xff7043];
+    sowDetails(ctx, parts, 120, [
+      (x, z) => detail.tuft(THREE, rng, x, z, 0x5f9a35),
+      (x, z) => detail.tuft(THREE, rng, x, z, 0x7ab648),
+      (x, z) => detail.flower(THREE, rng, x, z, FLOWERS[rng.int(0, FLOWERS.length - 1)]),
+      (x, z) => detail.flower(THREE, rng, x, z, FLOWERS[rng.int(0, FLOWERS.length - 1)]),
+      (x, z) => detail.pebble(THREE, rng, x, z, 0x9e9e96),
+    ]);
 
     const mesh = new THREE.Mesh(mergeColored(THREE, parts), a.flatMat);
     ctx.group.add(mesh);
