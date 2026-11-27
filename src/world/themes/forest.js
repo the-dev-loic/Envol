@@ -1,76 +1,61 @@
-// Thème "forêt" low-poly. Un thème = un fichier qui exporte cet objet.
-// Pour créer un nouveau monde : copier ce fichier, changer couleurs et populateChunk,
-// puis l'enregistrer dans src/world/themes/index.js.
+// Thème "Forêt" : sapins, gros rochers, rangées d'arbres avec un passage.
+import { ground, instances, scatter, wallWithGap, borders } from '../obstacles.js';
 
-const TREE_COLORS = [0x2f7d32, 0x388e3c, 0x43a047, 0x1b5e20, 0x558b2f];
+const GREENS = [0x2f7d32, 0x388e3c, 0x43a047, 0x1b5e20, 0x558b2f];
 
 export default {
   name: 'forest',
+  label: 'Forêt',
   sky: 0xbfe3f2,
   fog: { near: 60, far: 380 },
-
-  createLights(THREE) {
-    const hemi = new THREE.HemisphereLight(0xeaf6ff, 0x4a6b3a, 1.6);
-    const sun = new THREE.DirectionalLight(0xfff2d6, 1.4);
-    sun.position.set(-40, 80, 30);
-    return [hemi, sun];
-  },
+  light: { sky: 0xeaf6ff, ground: 0x4a6b3a, sun: 0xfff2d6 },
 
   createAssets(THREE) {
-    const ground = new THREE.PlaneGeometry(260, 60, 1, 1);
-    ground.rotateX(-Math.PI / 2);
-    ground.translate(0, 0, -30);          // couvre z de -60 à 0 (un tronçon)
-    const trunk = new THREE.CylinderGeometry(0.35, 0.5, 3, 6);
-    trunk.translate(0, 1.5, 0);
-    const crown = new THREE.ConeGeometry(2.4, 7.5, 7);
-    crown.translate(0, 2 + 3.75, 0);
+    const trunk = new THREE.CylinderGeometry(0.35, 0.5, 3, 6).translate(0, 1.5, 0);
+    const crown = new THREE.ConeGeometry(2.4, 7.5, 7).translate(0, 5.75, 0);
+    const rock = new THREE.DodecahedronGeometry(2.2, 0);
     return {
-      ground,
-      trunk,
-      crown,
+      trunk, crown, rock,
       groundMat: new THREE.MeshLambertMaterial({ color: 0x7cb342 }),
       trunkMat: new THREE.MeshLambertMaterial({ color: 0x6d4c41, flatShading: true }),
       crownMat: new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
+      rockMat: new THREE.MeshLambertMaterial({ color: 0x8d8d86, flatShading: true }),
     };
   },
 
-  populateChunk({ THREE, group, index, length, halfWidth, rng, difficulty, assets, addCollider, track }) {
-    group.add(new THREE.Mesh(assets.ground, assets.groundMat));
+  populateChunk(ctx) {
+    const { rng, difficulty: d, assets: a } = ctx;
+    const green = () => GREENS[rng.int(0, GREENS.length - 1)];
+    ground(ctx, a.groundMat);
 
-    // Liste des arbres : [x, z, échelle, collision?]
-    const trees = [];
-    // Bordures denses (décor, hors couloir).
-    for (let i = 0; i < 26; i++) {
-      const side = i % 2 ? 1 : -1;
-      trees.push([side * rng.range(halfWidth + 1, halfWidth + 60), -rng.range(0, length), rng.range(1, 1.8), false]);
-    }
-    // Obstacles dans le couloir (aucun au tout début).
-    if (index >= 2) {
-      const n = Math.round(5 + difficulty * 20 + rng.range(0, 3));
-      for (let i = 0; i < n; i++) {
-        trees.push([rng.range(-halfWidth + 1, halfWidth - 1), -rng.range(0, length), rng.range(0.8, 1.4), true]);
+    const trees = borders(ctx, 26, 1, 60).map((p) => ({ ...p, sx: rng.range(1, 1.8), color: green() }));
+    const rocks = [];
+
+    if (!ctx.calm) {
+      // Sapins isolés
+      for (const p of scatter(ctx, Math.round(4 + d * 14 + rng.range(0, 3)), 2)) {
+        const s = rng.range(0.8, 1.4);
+        trees.push({ ...p, sx: s, sy: s * rng.range(0.9, 1.25), color: green() });
+        ctx.addCollider(p.x, p.z, 1.25 * s);
+      }
+      // Rangée d'arbres en travers, avec un seul passage
+      if (rng.chance(0.25 + d * 0.35)) {
+        const z = -rng.range(15, ctx.length - 15);
+        for (const x of wallWithGap(ctx, z, 3.2)) {
+          trees.push({ x, z, sx: 1.1, color: green() });
+          ctx.addCollider(x, z, 1.4);
+        }
+      }
+      // Gros rochers
+      for (const p of scatter(ctx, Math.round(rng.range(0, 1 + d * 4)), 3)) {
+        const s = rng.range(0.9, 1.4);
+        rocks.push({ ...p, y: 1, sx: s, sy: s * 1.5 });
+        ctx.addCollider(p.x, p.z, 2 * s);
       }
     }
 
-    const m = new THREE.Matrix4();
-    const q = new THREE.Quaternion();
-    const s = new THREE.Vector3();
-    const p = new THREE.Vector3();
-    const color = new THREE.Color();
-    const trunks = new THREE.InstancedMesh(assets.trunk, assets.trunkMat, trees.length);
-    const crowns = new THREE.InstancedMesh(assets.crown, assets.crownMat, trees.length);
-    trees.forEach(([x, z, sc, solid], i) => {
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rng.range(0, Math.PI * 2));
-      s.set(sc, sc * rng.range(0.9, 1.25), sc);
-      p.set(x, 0, z);
-      m.compose(p, q, s);
-      trunks.setMatrixAt(i, m);
-      crowns.setMatrixAt(i, m);
-      crowns.setColorAt(i, color.setHex(TREE_COLORS[rng.int(0, TREE_COLORS.length - 1)]));
-      if (solid) addCollider(x, z, 1.25 * sc);
-    });
-    group.add(trunks, crowns);
-    track(trunks);
-    track(crowns);
+    instances(ctx, a.trunk, a.trunkMat, trees.map(({ color, ...t }) => t));
+    instances(ctx, a.crown, a.crownMat, trees);
+    instances(ctx, a.rock, a.rockMat, rocks);
   },
 };

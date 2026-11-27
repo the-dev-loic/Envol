@@ -1,7 +1,7 @@
 // Service worker : "réseau d'abord, cache en secours".
 // -> toujours la dernière version en ligne, et le jeu marche hors-ligne après une 1re visite.
 // Changer CACHE si on veut forcer le nettoyage de l'ancien cache.
-const CACHE = 'envol-v1';
+const CACHE = 'envol-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 

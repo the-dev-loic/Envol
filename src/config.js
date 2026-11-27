@@ -1,6 +1,21 @@
 // Tous les réglages du jeu. Modifier ICI plutôt que dans le code.
 export const CONFIG = {
-  theme: 'forest',           // nom d'un fichier de src/world/themes/
+  stages: {
+    order: ['forest', 'canyon', 'snow', 'city'], // ordre des mondes en mode Aventure (puis ça boucle)
+    chunks: 20,              // longueur d'une étape, en tronçons (20 × 60 = 1200 m)
+  },
+
+  difficulty: {
+    rampChunks: 100,         // tronçons pour atteindre la difficulté max (0 → 1)
+  },
+
+  // Couloir sûr : un chemin sinueux toujours libre d'obstacles fixes (garantit qu'on peut passer).
+  safeLane: {
+    amplitude: 17,           // écart max du chemin par rapport au centre
+    wavelength: 700,         // longueur d'une ondulation (plus grand = plus doux)
+    halfWidthEasy: 4,        // demi-largeur libre au début
+    halfWidthHard: 2.6,      // demi-largeur libre à difficulté max
+  },
 
   speed: {
     start: 22,               // unités/s au départ
