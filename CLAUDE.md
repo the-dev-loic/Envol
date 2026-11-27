@@ -64,7 +64,7 @@ Chrome headless + puppeteer-core : servir le dossier, cliquer `[data-mode=advent
 - `window.__game` exposé pour le debug.
 
 ## Pièges iOS
-- `DeviceOrientationEvent.requestPermission()` doit être appelé dans un tap → fait dans `Game.start()`.
+- `DeviceOrientationEvent.requestPermission()` doit être appelé dans un tap, et iOS **n'enregistre pas** l'autorisation au-delà de la session (elle est redemandée à chaque lancement de l'app). `autoEnableTilt()` la demande au 1er toucher n'importe où, une seule fois par lancement. Le choix « Commandes : inclinaison / toucher » est mémorisé (`birdrun.control`) ; en mode toucher, rien n'est demandé.
 - iOS ne sait pas verrouiller l'orientation (ni `screen.orientation.lock`, ni manifest) → `orientation.js` tourne `#app` pour rester en paysage (les 2 sens de paysage sont acceptés). Tout l'UI doit vivre dans `#app` (positions `absolute`, pas `fixed`) et utiliser `viewportSize()` plutôt que `innerWidth/innerHeight`.
 - L'inclinaison ne marche qu'en HTTPS. iOS ignore `display: fullscreen` → mode `standalone` (plein écran sans barre Safari).
 - Après une mise en ligne, l'app installée récupère la nouvelle version au lancement suivant (réseau d'abord).

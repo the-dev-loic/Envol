@@ -52,6 +52,7 @@ button.mode[data-best]:not([data-best=""])::after {
 }
 #themes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .row { display: flex; gap: 12px; }
+button.mode.small { min-width: 0; font-size: 13px; font-weight: 600; padding: 6px 14px; background: transparent; }
 #themes button.mode { min-width: 0; font-size: 15px; padding: 10px 12px; }
 
 #banner {

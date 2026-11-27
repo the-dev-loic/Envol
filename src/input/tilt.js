@@ -16,7 +16,10 @@ const R2D = 180 / Math.PI;
 const up = { x: 0, y: 0, z: 1 };  // direction "vers le ciel" dans le repère du téléphone
 let neutralDeg = 0;                // position "tout droit"
 let hasTilt = false;
+let listening = false;
 let keyAxis = 0;
+// Choix du joueur, mémorisé : 'tilt' (inclinaison) ou 'touch' (toucher gauche/droite).
+let control = localStorage.getItem('birdrun.control') || 'tilt';
 let touchAxis = 0;
 
 function onOrientation(e) {
@@ -34,19 +37,67 @@ function lateralDeg() {
   return Math.asin(Math.max(-1, Math.min(1, v))) * R2D;
 }
 
-/** À appeler depuis un geste utilisateur (tap) : iOS l'exige. */
-export async function enableTilt() {
+function listen() {
+  if (listening) return;
+  listening = true;
+  window.addEventListener('deviceorientation', onOrientation);
+}
+
+/**
+ * Demande l'accès aux mouvements (iOS l'exige, depuis un geste utilisateur).
+ * iOS ne garde l'autorisation que tant que l'app est ouverte : on ne la demande donc
+ * qu'une fois par lancement, et jamais si le joueur a choisi les commandes tactiles.
+ */
+let pending = null;
+export function enableTilt() {
+  if (control !== 'tilt') return Promise.resolve(false);
+  if (listening) return Promise.resolve(true);
+  // Un seul appel à la fois (le 1er toucher et le bouton de départ peuvent arriver ensemble).
+  pending ??= requestAccess().finally(() => { pending = null; });
+  return pending;
+}
+
+async function requestAccess() {
   try {
     const DOE = window.DeviceOrientationEvent;
     if (DOE && typeof DOE.requestPermission === 'function') {
       const res = await DOE.requestPermission();
       if (res !== 'granted') return false;
     }
-    window.addEventListener('deviceorientation', onOrientation);
+    listen();
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Au chargement : active l'inclinaison sans rien demander si c'est possible
+ * (Android, ou autorisation iOS déjà accordée pour cette session), sinon la demande
+ * au PREMIER toucher n'importe où (avant même de choisir un mode).
+ */
+export function autoEnableTilt() {
+  const DOE = window.DeviceOrientationEvent;
+  if (control !== 'tilt' || !DOE) return;
+  if (typeof DOE.requestPermission !== 'function') { listen(); return; }
+  DOE.requestPermission().then((r) => { if (r === 'granted') listen(); }).catch(() => {});
+  const onFirstGesture = () => {
+    enableTilt();
+    document.removeEventListener('touchend', onFirstGesture, true);
+    document.removeEventListener('click', onFirstGesture, true);
+  };
+  document.addEventListener('touchend', onFirstGesture, true);
+  document.addEventListener('click', onFirstGesture, true);
+}
+
+export function getControl() {
+  return control;
+}
+
+export function setControl(value) {
+  control = value;
+  localStorage.setItem('birdrun.control', value);
+  if (value === 'tilt') enableTilt();
 }
 
 /** Mémorise la position actuelle du téléphone comme "tout droit". */
@@ -61,7 +112,7 @@ export function isTiltActive() {
 export function getSteer() {
   const { tiltMaxDeg, deadzoneDeg } = CONFIG.steer;
   let v = 0;
-  if (hasTilt) {
+  if (control === 'tilt' && hasTilt) {
     let d = lateralDeg() - neutralDeg;
     if (Math.abs(d) < deadzoneDeg) d = 0;
     else d -= Math.sign(d) * deadzoneDeg;
@@ -80,7 +131,7 @@ window.addEventListener('keydown', (e) => { keys.add(e.key); updateKeys(); });
 window.addEventListener('keyup', (e) => { keys.delete(e.key); updateKeys(); });
 
 function onTouch(e) {
-  if (hasTilt) { touchAxis = 0; return; }
+  if (control === 'tilt' && hasTilt) { touchAxis = 0; return; }
   let axis = 0;
   // Le jeu peut être tourné de 90° : on ramène le toucher dans le repère du jeu.
   for (const t of e.touches) {

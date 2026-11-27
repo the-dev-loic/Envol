@@ -16,9 +16,10 @@
 
 ## Idées suivantes (par ordre suggéré)
 - v0.3 : jeu verrouillé en paysage (rotation CSS si le téléphone est en portrait ; iOS ne sait pas verrouiller), menu adapté
+- v0.4 : autorisation des mouvements demandée une seule fois par lancement (au 1er toucher) + choix mémorisé « Commandes : inclinaison / toucher »
 
 ## Idées suivantes (suite)
-1. Bouton « recalibrer » + réglage de sensibilité dans le menu
+1. Bouton « recalibrer » + réglage de sensibilité dans le menu (le choix des commandes existe déjà)
 2. Ailes/bec visibles en bas de l'écran (sentiment d'être l'oiseau)
 3. Bonus à ramasser (anneaux, plumes) et pièces
 4. Monter/descendre (inclinaison avant/arrière) + obstacles à différentes hauteurs

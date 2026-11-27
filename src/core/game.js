@@ -5,7 +5,7 @@ import { Bird } from '../player/bird.js';
 import { World } from '../world/world.js';
 import { createPlan } from '../world/stages.js';
 import { getTheme } from '../world/themes/index.js';
-import { enableTilt, calibrate, getSteer } from '../input/tilt.js';
+import { enableTilt, calibrate, getSteer, getControl } from '../input/tilt.js';
 import { hud, modeLabel } from '../ui/hud.js';
 import { applyLandscape, viewportSize, tryNativeLock } from './orientation.js';
 
@@ -22,7 +22,6 @@ export class Game {
     this.state = 'menu';
     this.stageNumber = 1;
     this.clock = new THREE.Clock();
-    this.tiltRequested = false;
 
     this.resize();
     // iOS met parfois un instant à donner les nouvelles dimensions après une rotation.
@@ -59,10 +58,9 @@ export class Game {
   async start(mode = this.mode) {
     this.mode = mode;
     localStorage.setItem('birdrun.mode', mode);
-    if (!this.tiltRequested) {
-      this.tiltRequested = true;
-      const ok = await enableTilt();
-      if (!ok) hud.setHint('Inclinaison indisponible : touche la gauche / droite de l’écran.');
+    if (getControl() === 'tilt') {
+      const ok = await enableTilt(); // ne redemande rien si déjà autorisé pendant ce lancement
+      hud.setHint(ok ? '' : 'Inclinaison refusée : touche la gauche / droite de l’écran.');
     }
     this.requestWakeLock();
     tryNativeLock();
