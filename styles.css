@@ -50,7 +50,7 @@ button.mode small { display: block; font-size: 12px; font-weight: 500; opacity: 
 button.mode[data-best]:not([data-best=""])::after {
   content: "Record " attr(data-best); display: block; font-size: 11px; font-weight: 500; opacity: .85;
 }
-#themes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+#themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; width: min(100%, 720px); }
 .row { display: flex; gap: 12px; }
 button.mode.small { min-width: 0; font-size: 13px; font-weight: 600; padding: 6px 14px; background: transparent; }
 #themes button.mode { min-width: 0; font-size: 15px; padding: 10px 12px; }

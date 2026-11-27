@@ -8,12 +8,13 @@
 ## Le jeu
 Oiseau à la 1re personne, avance tout seul vers l'avant, de plus en plus vite, monde infini.
 On va à gauche/droite en inclinant le téléphone. Collision avec un obstacle = fin. Score = distance (m).
-Modes : **Aventure** (étapes de 1200 m : Forêt → Canyon → Neige → Ville, puis boucle) ou **un seul monde** à l'infini.
+Modes : **Aventure** (étapes de 1200 m : Forêt → Campagne → Canyon → Neige → Ville, puis boucle) ou **un seul monde** à l'infini.
 Record séparé par mode (localStorage `birdrun.best.<mode>`).
 
 ## Stack (aucune étape de build)
 - HTML + JS modules natifs + Three.js r187 dans `vendor/` (importmap `"three"` dans index.html).
-- PWA : `manifest.webmanifest` + `sw.js` (réseau d'abord, cache en secours) → installable via Safari « Sur l'écran d'accueil ».
+- PWA : `manifest.webmanifest` + `sw.js` → installable via Safari « Sur l'écran d'accueil » et **jouable sans connexion** (tous les fichiers pré-téléchargés ; réseau d'abord avec délai de 2,5 s, sinon cache).
+- ⚠️ **Avant chaque commit : `python3 tools/update-sw.py`** (régénère la liste des fichiers hors connexion + la version du cache). Sans ça, un nouveau fichier ne marche pas hors ligne.
 - Hébergement : n'importe quel serveur statique **HTTPS** (requis par iOS pour l'inclinaison). Ex. GitHub Pages.
 - Test local : `python3 -m http.server` puis ouvrir `http://localhost:8000` (flèches ←/→ ou Q/D pour diriger).
 
@@ -29,10 +30,12 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/player/bird.js` | Caméra = oiseau : avance, latéral, roulis, battement, FOV vitesse | sensations de vol |
 | `src/world/world.js` | Tronçons infinis, colliders, obstacles mobiles, transition d'ambiance entre thèmes, recentrage | génération générale |
 | `src/world/stages.js` | Plan de partie : thème + n° d'étape pour chaque tronçon | modes, enchaînement des étapes |
+| `src/world/merge.js` | `mergeColored()` : fusionne des pièces colorées en 1 géométrie (1 appel de rendu par tronçon) | décor riche (ville, campagne) |
 | `src/world/obstacles.js` | Briques pour les thèmes : `scatter`, `wallWithGap`, `borders`, `instances`, `mover`, couloir sûr `safeX`/`isFree` | nouveaux types d'obstacles |
-| `src/world/themes/*.js` | **Contenu d'un monde** : forest, canyon, snow, city | nouveaux mondes |
+| `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon, snow, city (façades à fenêtres, boulevard) | nouveaux mondes |
 | `src/world/themes/index.js` | Registre des thèmes | ajouter un thème |
-| `src/ui/hud.js` + `index.html` + `styles.css` | Menu (choix du mode), score, bannière, fin, records | interface |
+| `src/ui/hud.js` + `index.html` + `styles.css` | Menu (choix du mode, commandes, état hors connexion), score, bannière, fin, records | interface |
+| `sw.js` + `tools/update-sw.py` | Hors connexion : cache complet du jeu | ajout de fichiers (relancer le script) |
 
 ## Contrat d'un thème (pour « modifier le monde »)
 ```js
@@ -43,13 +46,15 @@ export default {
   populateChunk(ctx)                        // remplit UN tronçon
 }
 // ctx = { THREE, group, index, length, halfWidth, rng, difficulty /*0..1*/, calm /*true = pas d'obstacle*/,
-//         assets, shared /*{ground}*/, distanceAt(z), addCollider(x,z,r), addMover(m), track(obj) }
+//         assets, shared /*{ground}*/, distanceAt(z), addCollider(x,z,r), addMover(m),
+//         addSpinner(object, speed, axis='z') /*décor qui tourne*/, track(obj) }
 ```
 - Coordonnées locales au tronçon : `z` entre `-length` et `0`, `x` entre `-halfWidth` et `halfWidth`.
 - `addCollider` = obstacle circulaire (vu de dessus). Obstacle mobile : `mover(ctx, mesh, {x,z,r,amplitude,speed})`.
 - **Couloir sûr** : chemin sinueux (`safeX`) jamais bloqué par un obstacle fixe → toujours franchissable.
   Placer les obstacles fixes via `scatter`/`wallWithGap` (ou vérifier `isFree`). Les mobiles peuvent le croiser.
-- Utiliser `instances()` (InstancedMesh, perf mobile) et `ctx.rng` (jamais `Math.random`).
+- Perf : `instances()` (InstancedMesh) pour les objets répétés, ou `mergeColored()` pour fusionner tout le décor d'un tronçon. `ctx.rng` toujours (jamais `Math.random`).
+- Obstacle qu'on traverse (grange) : poser ses colliders à la main autour du couloir sûr (`safeX`) et réserver sa zone pour que `scatter` ne mette rien dedans (voir country.js).
 - Nouveau thème : créer le fichier, l'ajouter dans `themes/index.js` (et `CONFIG.stages.order` pour l'Aventure).
 
 ## Tests
@@ -59,7 +64,7 @@ Chrome headless + puppeteer-core : servir le dossier, cliquer `[data-mode=advent
 ## Conventions
 - Axe d'avance : **-Z**. L'oiseau garde `y = CONFIG.bird.height`.
 - Toute valeur réglable va dans `config.js`, pas en dur.
-- Budget perf : viser < 60 draw calls (`__game.renderer.info.render.calls` en console).
+- Budget perf : viser ~60 draw calls max (mesuré : 64 au pire en Aventure) (`__game.renderer.info.render.calls` en console).
 - Après une modif : mettre à jour la carte ci-dessus si un fichier est ajouté, et `docs/ROADMAP.md`.
 - `window.__game` exposé pour le debug.
 

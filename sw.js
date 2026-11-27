@@ -1,9 +1,43 @@
-// Service worker : "réseau d'abord, cache en secours".
-// -> toujours la dernière version en ligne, et le jeu marche hors-ligne après une 1re visite.
-// Changer CACHE si on veut forcer le nettoyage de l'ancien cache.
-const CACHE = 'envol-v5';
+// Service worker : rend le jeu jouable SANS CONNEXION.
+// - À l'installation, TOUS les fichiers du jeu sont téléchargés et rangés dans le cache.
+// - Ensuite : on essaie le réseau (pour avoir la dernière version) avec un délai court,
+//   et sinon on sert la copie en cache → le jeu se lance en mode avion.
+// La liste FILES et la version CACHE sont générées par :  python3 tools/update-sw.py
+const CACHE = 'envol-4c59020bf6';
+const FILES = [
+  './',
+  './icons/icon-180.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './index.html',
+  './manifest.webmanifest',
+  './src/config.js',
+  './src/core/game.js',
+  './src/core/orientation.js',
+  './src/core/rng.js',
+  './src/input/tilt.js',
+  './src/main.js',
+  './src/player/bird.js',
+  './src/ui/hud.js',
+  './src/world/merge.js',
+  './src/world/obstacles.js',
+  './src/world/stages.js',
+  './src/world/themes/canyon.js',
+  './src/world/themes/city.js',
+  './src/world/themes/country.js',
+  './src/world/themes/forest.js',
+  './src/world/themes/index.js',
+  './src/world/themes/snow.js',
+  './src/world/world.js',
+  './styles.css',
+  './vendor/three.core.js',
+  './vendor/three.module.js',
+];
+const NETWORK_TIMEOUT = 2500; // ms : au-delà, on joue avec la copie locale
 
-self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
@@ -14,14 +48,24 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
-  e.respondWith(
-    fetch(e.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy));
-        return res;
-      })
-      .catch(() => caches.match(e.request))
-  );
+  const req = e.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  e.respondWith(networkThenCache(req));
 });
+
+async function networkThenCache(req) {
+  const cache = await caches.open(CACHE);
+  const fromNetwork = fetch(req).then((res) => {
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  });
+  fromNetwork.catch(() => {}); // hors ligne : l'erreur est gérée plus bas
+  const timeout = new Promise((resolve) => setTimeout(resolve, NETWORK_TIMEOUT));
+  try {
+    const res = await Promise.race([fromNetwork, timeout]);
+    if (res) return res;
+  } catch { /* hors ligne */ }
+  const cached = await cache.match(req, { ignoreSearch: true })
+    || (req.mode === 'navigate' && await cache.match('./index.html'));
+  return cached || fromNetwork;
+}

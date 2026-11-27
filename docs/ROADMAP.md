@@ -17,6 +17,7 @@
 ## Idées suivantes (par ordre suggéré)
 - v0.3 : jeu verrouillé en paysage (rotation CSS si le téléphone est en portrait ; iOS ne sait pas verrouiller), menu adapté
 - v0.4 : autorisation des mouvements demandée une seule fois par lancement (au 1er toucher) + choix mémorisé « Commandes : inclinaison / toucher »
+- v0.5 : ville refaite (façades à fenêtres éclairées, boulevard, panneaux, arbres), monde Campagne (granges à traverser, moulins, silos, meules, animaux, champs), jeu jouable sans connexion
 
 ## Idées suivantes (suite)
 1. Bouton « recalibrer » + réglage de sensibilité dans le menu (le choix des commandes existe déjà)

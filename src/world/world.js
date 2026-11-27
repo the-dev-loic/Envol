@@ -59,13 +59,14 @@ export class World {
       if (i < cur - chunksBehind || i > cur + chunksAhead) this.removeChunk(i);
     }
     this.time += dt;
-    this.updateMovers();
+    this.updateMovers(dt);
     this.updateAtmosphere(playerZ, Math.min(1, dt * 0.8));
   }
 
-  updateMovers() {
+  updateMovers(dt) {
     const lim = CONFIG.world.halfWidth - 1;
     for (const c of this.chunks.values()) {
+      for (const sp of c.spinners) sp.object.rotation[sp.axis] += sp.speed * dt;
       for (const m of c.movers) {
         const x = Math.max(-lim, Math.min(lim, m.x0 + Math.sin(this.time * m.speed + m.phase) * m.amplitude));
         m.object.position.x = x;
@@ -97,7 +98,7 @@ export class World {
     const theme = getTheme(stage.theme);
     const group = new THREE.Group();
     group.position.z = -index * L + this.shift;
-    const chunk = { group, colliders: [], movers: [], disposables: [] };
+    const chunk = { group, colliders: [], movers: [], spinners: [], disposables: [] };
     theme.populateChunk({
       THREE,
       group,
@@ -118,6 +119,8 @@ export class World {
         chunk.colliders.push(m.collider);
         chunk.movers.push(m);
       },
+      // Objet décoratif qui tourne sur lui-même (ailes de moulin…) : axis 'x' | 'y' | 'z', vitesse en rad/s
+      addSpinner: (object, speed, axis = 'z') => chunk.spinners.push({ object, speed, axis }),
       track: (obj) => chunk.disposables.push(obj),
     });
     this.scene.add(group);

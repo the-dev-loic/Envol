@@ -20,6 +20,17 @@ try {
   document.getElementById('hint').textContent = 'Impossible de lancer la 3D sur cet appareil : ' + String(err?.message || err);
 }
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
+// Hors connexion : le service worker garde une copie complète du jeu sur le téléphone.
+if ('serviceWorker' in navigator && window.isSecureContext) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker.ready.then(async () => {
+    // Le jeu est prêt hors connexion quand un fichier chargé en dernier est en cache.
+    for (let i = 0; i < 20; i++) {
+      if (await caches.match('./src/world/themes/country.js', { ignoreSearch: true })) {
+        document.getElementById('offline').textContent = '✓ Jouable sans connexion';
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  });
 }
