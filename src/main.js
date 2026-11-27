@@ -1,9 +1,11 @@
 // Point d'entrée : crée le jeu, branche les boutons, enregistre le service worker.
 import { Game } from './core/game.js';
 import { hud } from './ui/hud.js';
-import { autoEnableTilt, getControl, setControl } from './input/tilt.js';
+import { VERSION } from './version.js';
+import { autoEnableTilt, getControl, setControl, isInverted, setInverted } from './input/tilt.js';
 
 autoEnableTilt();
+document.getElementById('version').textContent = `version ${VERSION}`;
 
 try {
   const game = new Game(document.getElementById('game'));
@@ -14,6 +16,10 @@ try {
   const showControl = () => { ctrl.textContent = getControl() === 'tilt' ? 'Commandes : inclinaison' : 'Commandes : toucher gauche/droite'; };
   showControl();
   ctrl.addEventListener('click', (e) => { e.stopPropagation(); setControl(getControl() === 'tilt' ? 'touch' : 'tilt'); showControl(); });
+  const inv = document.getElementById('invert');
+  const showInvert = () => { inv.textContent = isInverted() ? 'Sens de l\u2019inclinaison : inversé' : 'Sens de l\u2019inclinaison : normal'; };
+  showInvert();
+  inv.addEventListener('click', (e) => { e.stopPropagation(); setInverted(!isInverted()); showInvert(); });
   document.getElementById('toMenu').addEventListener('click', (e) => { e.stopPropagation(); game.toMenu(); });
 } catch (err) {
   // Typiquement : WebGL indisponible. On l'affiche au lieu d'un écran figé.

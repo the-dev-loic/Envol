@@ -3,7 +3,7 @@
 // - Ensuite : on essaie le réseau (pour avoir la dernière version) avec un délai court,
 //   et sinon on sert la copie en cache → le jeu se lance en mode avion.
 // La liste FILES et la version CACHE sont générées par :  python3 tools/update-sw.py
-const CACHE = 'envol-fa7852c2d5';
+const CACHE = 'envol-b8352ca195';
 const FILES = [
   './',
   './icons/icon-180.png',
@@ -19,6 +19,7 @@ const FILES = [
   './src/main.js',
   './src/player/bird.js',
   './src/ui/hud.js',
+  './src/version.js',
   './src/world/ground.js',
   './src/world/merge.js',
   './src/world/obstacles.js',
@@ -57,7 +58,7 @@ self.addEventListener('fetch', (e) => {
 
 async function networkThenCache(req) {
   const cache = await caches.open(CACHE);
-  const fromNetwork = fetch(req).then((res) => {
+  const fromNetwork = fetch(req, { cache: 'no-cache' }).then((res) => {
     if (res.ok) cache.put(req, res.clone());
     return res;
   });

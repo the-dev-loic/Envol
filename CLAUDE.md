@@ -27,7 +27,7 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/core/game.js` | Boucle, états `menu/playing/over`, mode, bannière d'étape, collisions, recentrage | règles du jeu, nouveaux états |
 | `src/core/orientation.js` | Garde le jeu en **paysage** : si l'écran est en portrait, `#app` est tourné de -90° (`viewportSize()` = taille paysage, `gameAngle()` = 90/-90) | orientation |
 | `src/core/rng.js` | Aléatoire déterministe par tronçon | — |
-| `src/input/tilt.js` | Inclinaison iOS (vecteur gravité continu, axe Y du téléphone, sens selon `gameAngle()`) + secours clavier/tactile → `getSteer()` ∈ [-1,1] | contrôles |
+| `src/input/tilt.js` | Inclinaison iOS (vecteur gravité continu ; côté du paysage mesuré **physiquement** à la calibration via le signe de `up.x`, jamais via `screen.orientation.angle` ; option « sens inversé » mémorisée `birdrun.invert`) + secours clavier/tactile → `getSteer()` ∈ [-1,1] | contrôles |
 | `src/player/bird.js` | Caméra = oiseau : avance, latéral, roulis, battement, FOV vitesse | sensations de vol |
 | `src/world/world.js` | **Grille de cases** (ix, iz) créées autour de l'oiseau (quelques-unes par image), sol par rangée qui suit l'oiseau en X, colliders (case + voisines), obstacles mobiles, ambiance, recentrage Z | génération générale |
 | `src/world/stages.js` | Plan de partie : thème + n° d'étape pour chaque tronçon | modes, enchaînement des étapes |
@@ -38,7 +38,7 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon (mesas), snow (montagnes), city (quadrillage d'avenues tous les 40 m + rues transversales) | nouveaux mondes |
 | `src/world/themes/index.js` | Registre des thèmes | ajouter un thème |
 | `src/ui/hud.js` + `index.html` + `styles.css` | Menu (choix du mode, commandes, état hors connexion), score, bannière, fin, records | interface |
-| `sw.js` + `tools/update-sw.py` | Hors connexion : cache complet du jeu | ajout de fichiers (relancer le script) |
+| `sw.js` + `tools/update-sw.py` | Hors connexion : cache complet du jeu (revalidation `no-cache`) + génère `src/version.js` | ajout de fichiers (relancer le script) |
 
 ## Contrat d'un thème (pour « modifier le monde »)
 ```js
@@ -81,5 +81,7 @@ Hors connexion : `page.setOfflineMode(true)` puis recharger → le menu doit s'a
 ## Pièges iOS
 - `DeviceOrientationEvent.requestPermission()` doit être appelé dans un tap, et iOS **n'enregistre pas** l'autorisation au-delà de la session (elle est redemandée à chaque lancement de l'app). `autoEnableTilt()` la demande au 1er toucher n'importe où, une seule fois par lancement. Le choix « Commandes : inclinaison / toucher » est mémorisé (`birdrun.control`) ; en mode toucher, rien n'est demandé.
 - iOS ne sait pas verrouiller l'orientation (ni `screen.orientation.lock`, ni manifest) → `orientation.js` tourne `#app` pour rester en paysage (les 2 sens de paysage sont acceptés). Tout l'UI doit vivre dans `#app` (positions `absolute`, pas `fixed`) et utiliser `viewportSize()` plutôt que `innerWidth/innerHeight`.
+- `screen.orientation.angle` sur iOS = 90/270 **à l'inverse** de `window.orientation` (et ça a varié selon les versions) → ne jamais s'en servir pour le sens de l'inclinaison.
+- Le menu affiche la version (`src/version.js`, générée par `tools/update-sw.py`) : sert à vérifier que le téléphone a bien la dernière version.
 - L'inclinaison ne marche qu'en HTTPS. iOS ignore `display: fullscreen` → mode `standalone` (plein écran sans barre Safari).
 - Après une mise en ligne, l'app installée récupère la nouvelle version au lancement suivant (réseau d'abord).

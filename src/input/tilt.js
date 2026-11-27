@@ -11,6 +11,12 @@
 import { CONFIG } from '../config.js';
 import { gameAngle, isForced } from '../core/orientation.js';
 
+// Côté du paysage, mesuré PHYSIQUEMENT à la calibration (et pas via screen.orientation.angle :
+// iOS renvoie 90/270 à l'inverse de window.orientation, et ça a changé selon les versions).
+//   +1 = haut du téléphone à gauche, -1 = haut du téléphone à droite.
+let side = 1;
+let invert = localStorage.getItem('birdrun.invert') === '1';
+
 const D2R = Math.PI / 180;
 const R2D = 180 / Math.PI;
 const up = { x: 0, y: 0, z: 1 };  // direction "vers le ciel" dans le repère du téléphone
@@ -33,8 +39,8 @@ function onOrientation(e) {
 
 /** Inclinaison gauche/droite en degrés, dans le repère du jeu (paysage). */
 function lateralDeg() {
-  // Sens vérifié sur iPhone : pencher le bord droit vers le bas = aller à droite.
-  const v = gameAngle() === -90 ? up.y : -up.y;
+  // Pencher le bord droit vers le bas = aller à droite (vecteur "haut" exprimé dans le repère du téléphone).
+  const v = side * up.y * (invert ? -1 : 1);
   return Math.asin(Math.max(-1, Math.min(1, v))) * R2D;
 }
 
@@ -91,6 +97,15 @@ export function autoEnableTilt() {
   document.addEventListener('click', onFirstGesture, true);
 }
 
+export function isInverted() {
+  return invert;
+}
+
+export function setInverted(value) {
+  invert = value;
+  localStorage.setItem('birdrun.invert', value ? '1' : '0');
+}
+
 export function getControl() {
   return control;
 }
@@ -103,6 +118,10 @@ export function setControl(value) {
 
 /** Mémorise la position actuelle du téléphone comme "tout droit". */
 export function calibrate() {
+  // En paysage, l'axe X du téléphone (sa largeur en portrait) pointe vers le haut de l'écran :
+  // son signe dit de quel côté est le haut du téléphone.
+  if (Math.abs(up.x) > 0.15) side = Math.sign(up.x);
+  else side = gameAngle() === -90 ? -1 : 1;
   neutralDeg = lateralDeg();
 }
 
