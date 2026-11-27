@@ -7,6 +7,7 @@ import { createPlan } from '../world/stages.js';
 import { getTheme } from '../world/themes/index.js';
 import { enableTilt, calibrate, getSteer } from '../input/tilt.js';
 import { hud, modeLabel } from '../ui/hud.js';
+import { applyPortrait, viewportSize, tryNativeLock } from './orientation.js';
 
 export class Game {
   constructor(canvas) {
@@ -24,7 +25,10 @@ export class Game {
     this.tiltRequested = false;
 
     this.resize();
-    window.addEventListener('resize', () => this.resize());
+    // iOS met parfois un instant à donner les nouvelles dimensions après une rotation.
+    const onRotate = () => { this.resize(); setTimeout(() => this.resize(), 300); };
+    window.addEventListener('resize', onRotate);
+    window.addEventListener('orientationchange', onRotate);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.clock.stop();
       else this.clock.start();
@@ -36,7 +40,8 @@ export class Game {
   }
 
   resize() {
-    const w = window.innerWidth, h = window.innerHeight;
+    applyPortrait();
+    const { w, h } = viewportSize();
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
@@ -60,6 +65,7 @@ export class Game {
       if (!ok) hud.setHint('Inclinaison indisponible : touche la gauche / droite de l’écran.');
     }
     this.requestWakeLock();
+    tryNativeLock();
     // Laisse arriver les premières mesures avant de fixer le "tout droit"
     // (les deux premiers tronçons sont vides, donc pas de risque pendant ce délai).
     setTimeout(calibrate, 250);

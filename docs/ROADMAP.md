@@ -15,6 +15,9 @@
 - Couloir sûr garanti (toujours un chemin possible), records par mode
 
 ## Idées suivantes (par ordre suggéré)
+- v0.3 : écran verrouillé en portrait (contre-rotation, iOS ne sait pas verrouiller)
+
+## Idées suivantes (suite)
 1. Bouton « recalibrer » + réglage de sensibilité dans le menu
 2. Ailes/bec visibles en bas de l'écran (sentiment d'être l'oiseau)
 3. Bonus à ramasser (anneaux, plumes) et pièces
