@@ -10,7 +10,7 @@
 Oiseau à la 1re personne, avance tout seul vers l'avant, de plus en plus vite.
 **Monde ouvert** : infini devant ET sur les côtés (aucun mur), **différent à chaque partie** (graine aléatoire).
 On va à gauche/droite en inclinant le téléphone. Collision avec un obstacle = fin. Score = distance (m).
-Modes : **Aventure** (étapes de 1200 m : Forêt → Campagne → Canyon → Neige → Ville, puis boucle) ou **un seul monde** à l'infini.
+Modes : **Aventure** (étapes de 1200 m : Forêt → Campagne → Océan → Canyon → Neige → Ville, puis boucle) ou **un seul monde** à l'infini.
 Record séparé par mode (localStorage `birdrun.best.<mode>`).
 
 ## Gérer le jeu sans coder
@@ -44,10 +44,10 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/world/sky.js` | Ciel en dégradé, **soleil qui sourit / lune qui dort** (textures canvas), **gros nuages** (1 objet, motif répété), étoiles, **cycle jour/nuit**, **météo** (beau, brouillard, pluie / neige), précipitations. `world.sky.set({time, weather})` pour tester | ambiance, météo |
 | `src/world/ground.js` | Sol : `groundMaterial()` (texture procédurale sans image) + petits détails `detail.*` / `sowDetails()` (touffes, fleurs, cailloux, champignons, cactus…) | rendu du sol |
 | `src/world/style.js` | **Matériaux cartoon** : `toon()` / `toonColors()` (MeshToonMaterial + dégradé 3 tons, modifiable par `setShadingTones`). Ne plus utiliser MeshLambert/Standard | rendu, style |
-| `src/world/cute.js` | Pièces mignonnes réutilisables : `lollipopTree`, `stackPine`, `mushroom` (à pois), `bigFlower`, `roundRock`, `snowman`, `penguin`, `cactus` | décor enfantin |
+| `src/world/cute.js` | Pièces mignonnes réutilisables : `lollipopTree`, `stackPine`, `mushroom` (à pois), `bigFlower`, `roundRock`, `snowman`, `penguin`, `cactus`, **nuée d'oiseaux** `flockGeometries` + `makeFlock` (ailes qui battent, 2 objets par nuée) | décor enfantin |
 | `src/world/merge.js` | `mergeColored()` : fusionne des pièces colorées en 1 géométrie (1 appel de rendu par tronçon) | décor riche (ville, campagne) |
 | `src/world/obstacles.js` | Briques pour les thèmes : `scatter`, `density`, `wallWithGap`, `instances`, `mover` ; **chemin sûr** `setLaneSeed`/`safeX`/`laneX`/`laneInTile`/`isFree` | nouveaux types d'obstacles |
-| `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon (mesas), snow (montagnes), city (quadrillage d'avenues tous les 40 m + rues transversales) | nouveaux mondes |
+| `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux, oiseaux rouges), **ocean** (mer animée, îles à palmiers, rochers, phares, bateau pirate, voiliers mobiles, arches, pilotis, mouettes), canyon (mesas), snow (montagnes), city (quadrillage d'avenues tous les 40 m + rues transversales) | nouveaux mondes |
 | `src/world/themes/index.js` | Registre des thèmes | ajouter un thème |
 | `src/ui/hud.js` + `index.html` + `styles.css` | Menu (choix du mode, commandes, état hors connexion), score, bannière, fin, records | interface |
 | `sw.js` + `tools/update-sw.py` | Hors connexion : cache complet du jeu (+ `reglages.json`, sans `admin.html`), revalidation `no-cache` ; génère `src/version.js` | ajout de fichiers (relancer le script) |
@@ -58,6 +58,7 @@ export default {
   name, label: 'Nom affiché', icon: '🌳', sky: 0xRRGGBB, fog: { near, far }, precipitation?: 'rain' | 'snow',
   light: { sky, ground, sun },              // couleurs des lumières (transition douce entre thèmes)
   createAssets(THREE) -> { groundMat, ... }, // groundMat OBLIGATOIRE (sol de la rangée) ; créés une fois
+  animate?(assets, time)                    // facultatif, appelé à chaque image (ex. vagues de l'océan)
   populateTile(ctx)                         // remplit UNE case (largeur ctx.width, longueur ctx.length)
 }
 // ctx = { THREE, group, index /*iz*/, ix, width, length, offsetX, rng, difficulty /*0..1*/, calm,
@@ -76,7 +77,8 @@ export default {
 - Obstacle qu'on traverse (grange) : colliders posés à la main + `ctx.reserve()` (voir country.js).
 - Sol : `groundMat: groundMaterial(THREE, { base, blotches, specks, blades?, cracks?, tile? }, seed)` (tile divise 60) + détails `sowDetails`.
 - L'heure et la météo modifient l'ambiance du thème (sky.js) : le thème donne seulement ses couleurs « de jour par beau temps ».
-- Nouveau thème : créer le fichier, l'ajouter dans `themes/index.js` (et `CONFIG.stages.order` pour l'Aventure).
+- Obstacle mobile : `mover(ctx, mesh, {x,z,r,amplitude,speed})` ; si `mesh.userData.animate(t)` existe, il est appelé à chaque image (ex. ailes).
+- Nouveau thème : créer le fichier, l'ajouter dans `themes/index.js`, `CONFIG.stages.order` **et `etapes.ordre` de `reglages.json`** (sinon absent de l'Aventure), `THEMES` de `admin.html`, et une couleur de bouton dans `styles.css` (`#themes button[data-mode=…]`).
 
 ## Tests
 Chrome headless + puppeteer-core : servir le dossier, cliquer `[data-mode=adventure]`, puis autopilote

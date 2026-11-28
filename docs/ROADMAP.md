@@ -23,6 +23,7 @@
 - v0.8 : inclinaison au sens mesuré physiquement + option « sens inversé », version affichée, jouable entièrement au clavier sur ordinateur
 - v0.9 : refonte graphique enfantine (ombrage cartoon, couleurs bonbon, arbres sucettes, champignons à pois, bonshommes de neige, pingouins, ville pastel, soleil/lune avec visage, nuages, ailes et bec visibles, interface « gommes »)
 - v1.0 : 6 nouveaux styles graphiques au choix (Pastel, Néon, Pixel, Rétro, BD, Aquarelle), fichier `reglages.json`, page de contrôle `admin.html` (réglages, versions, remise en ligne)
+- v1.1 : monde Océan (îles, phares, bateau pirate, voiliers, arches, mouettes, baleines, dauphins), oiseaux de la campagne refaits (gros, colorés, ailes qui battent)
 
 ## Idées suivantes (suite)
 1. Bouton « recalibrer » + réglage de sensibilité dans le menu (le choix des commandes existe déjà)
