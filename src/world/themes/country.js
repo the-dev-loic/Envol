@@ -1,12 +1,12 @@
 // Thème "Campagne" : granges à traverser, moulins aux ailes qui tournent, silos, chênes, peupliers,
 // fermes, meules de foin, champs cultivés, prés clôturés avec vaches, moutons, cochons, poules,
-// et des nuées de corbeaux à éviter.
+// et des nuées d'oiseaux colorés à éviter.
 // Tout le décor d'une case est fusionné en une seule géométrie (ctx.merge).
 import { scatter, wallWithGap, mover, laneX, laneInTile, density } from '../obstacles.js';
 import { mergeColored } from '../merge.js';
 import { groundMaterial, detail, sowDetails } from '../ground.js';
 import { toonColors } from '../style.js';
-import { lollipopTree, bigFlower } from '../cute.js';
+import { lollipopTree, bigFlower, flockGeometries, makeFlock } from '../cute.js';
 
 const CROPS = [0xffd23f, 0x8ee04f, 0xffa94d, 0xc49bff, 0x5fd35f, 0xff8fb1];
 const FLOWERS = [0xffffff, 0xffe14d, 0xff5c9e, 0xb388ff, 0xff8c42, 0x5ec8ff];
@@ -28,20 +28,14 @@ export default {
       blades.push({ geometry: new THREE.BoxGeometry(0.18, 6.6, 0.12).translate(0, 3.7, 0).rotateZ((k * Math.PI) / 2), color: 0x6d4c41 });
       blades.push({ geometry: new THREE.BoxGeometry(1.3, 5.2, 0.06).translate(0.75, 4.2, 0).rotateZ((k * Math.PI) / 2), color: k % 2 ? 0xff7eb6 : 0xffffff });
     }
-    // Nuée de corbeaux
-    const flock = [];
-    for (const [x, y, z] of [[0, 0, 0], [-1.4, 0.5, 0.8], [1.3, 0.3, -0.6], [-0.6, -0.6, -1.2], [0.8, 0.9, 1.3], [1.9, -0.4, 0.5]]) {
-      flock.push({ geometry: new THREE.BoxGeometry(0.35, 0.25, 0.7).translate(x, y, z), color: 0x262626 });
-      flock.push({ geometry: new THREE.BoxGeometry(1.4, 0.05, 0.35).translate(x, y + 0.08, z), color: 0x333333 });
-      flock.push({ geometry: new THREE.ConeGeometry(0.08, 0.25, 4).rotateX(-Math.PI / 2).translate(x, y, z + 0.45), color: 0xf2a33a });
-    }
     return {
       groundMat: groundMaterial(THREE, {
         base: 0x8be05c, blotches: [0x7dd64e, 0x9ee86c, 0xb4ea72, 0x72cc48], specks: [0x62bf3f, 0xc4f28a, 0xffffff], blades: true, speckCount: 4000,
       }, 53),
       flatMat,
       blades: mergeColored(THREE, blades),
-      flock: mergeColored(THREE, flock),
+      // Oiseaux rouges à ailes violettes : bien visibles sur le ciel bleu et l'herbe verte
+      flock: flockGeometries(THREE, mergeColored, { body: 0xff4d6d, wing: 0x7b5cff, belly: 0xffe066 }),
     };
   },
 
@@ -216,12 +210,12 @@ export default {
           ctx.addCollider(x, z, 1);
         }
       }
-      // Nuée de corbeaux qui traverse le chemin
+      // Nuée d'oiseaux qui traverse le chemin
       const zc = -rng.range(8, L - 8);
       if (d > 0.1 && rng.chance(0.25 + d * 0.4) && laneInTile(ctx, zc)) {
-        const crows = new THREE.Mesh(a.flock, a.flatMat);
-        crows.position.y = 3.2;
-        mover(ctx, crows, { x: laneX(ctx, zc) + rng.range(-8, 8), z: zc, r: 1.7, amplitude: rng.range(8, 16), speed: rng.range(0.9, 1.5 + d) });
+        const birds = makeFlock(THREE, a.flock, a.flatMat);
+        birds.position.y = 3.2;
+        mover(ctx, birds, { x: laneX(ctx, zc) + rng.range(-8, 8), z: zc, r: 2.8, amplitude: rng.range(8, 16), speed: rng.range(0.9, 1.5 + d) });
       }
     }
     // Animaux qui broutent en liberté

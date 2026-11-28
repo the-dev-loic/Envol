@@ -107,6 +107,7 @@ button.mode.small.look { background: linear-gradient(#fff6b0, #ffd23f); font-siz
 #themes button.mode { min-width: 0; font-size: 14px; padding: 6px 8px 8px; border-radius: 18px; }
 #themes button[data-mode="forest"]  { background: #c8f7b5; }
 #themes button[data-mode="country"] { background: #fff2a8; }
+#themes button[data-mode="ocean"]   { background: #b8ecff; }
 #themes button[data-mode="canyon"]  { background: #ffd1b3; }
 #themes button[data-mode="snow"]    { background: #d4ecff; }
 #themes button[data-mode="city"]    { background: #f3d1ff; }

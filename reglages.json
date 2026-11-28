@@ -11,7 +11,14 @@
     "vitesseLaterale": 20
   },
   "etapes": {
-    "ordre": ["forest", "country", "canyon", "snow", "city"],
+    "ordre": [
+      "forest",
+      "country",
+      "ocean",
+      "canyon",
+      "snow",
+      "city"
+    ],
     "longueurMetres": 1200
   },
   "difficulte": {

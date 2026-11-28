@@ -105,3 +105,41 @@ export function cactus(THREE, rng, x, z, s = 1) {
   }
   return parts;
 }
+
+/**
+ * Nuée d'oiseaux mignons, bien visibles (gros, colorés, yeux, bec), qui regardent le joueur.
+ * Géométries à créer UNE fois (createAssets) avec flockGeometries(), puis makeFlock() pour chaque nuée.
+ * Les ailes forment un seul objet : on les fait battre en changeant son échelle verticale
+ * (tous les oiseaux sont à la même hauteur, ailes relevées en V).
+ */
+const FLOCK_SPOTS = [[0, 0], [-2.4, 1.5], [2.4, 1.3], [-1.3, -1.8], [1.4, -2]];
+export function flockGeometries(THREE, mergeColored, { body, wing, belly = 0xffffff, beak = 0xffb000, scale = 1.3 }) {
+  const bodies = [], wings = [];
+  for (const [x, z] of FLOCK_SPOTS) {
+    const s = scale;
+    bodies.push(
+      { geometry: new THREE.SphereGeometry(0.55 * s, 10, 8).scale(1, 0.85, 1.1).translate(x, 0, z), color: body },
+      { geometry: new THREE.SphereGeometry(0.4 * s, 8, 6).scale(0.9, 0.7, 0.6).translate(x, -0.12 * s, z + 0.32 * s), color: belly },
+      { geometry: new THREE.SphereGeometry(0.4 * s, 10, 8).translate(x, 0.38 * s, z + 0.45 * s), color: body },
+      { geometry: new THREE.ConeGeometry(0.13 * s, 0.38 * s, 8).rotateX(Math.PI / 2).translate(x, 0.3 * s, z + 0.95 * s), color: beak },
+      { geometry: new THREE.ConeGeometry(0.28 * s, 0.6 * s, 6).rotateX(-Math.PI / 2).translate(x, 0.05 * s, z - 0.8 * s), color: wing },
+    );
+    for (const side of [-1, 1]) {
+      bodies.push({ geometry: new THREE.SphereGeometry(0.12 * s, 8, 6).translate(x + side * 0.17 * s, 0.5 * s, z + 0.8 * s), color: 0xffffff });
+      bodies.push({ geometry: new THREE.SphereGeometry(0.07 * s, 6, 5).translate(x + side * 0.17 * s, 0.5 * s, z + 0.9 * s), color: 0x222233 });
+      wings.push({ geometry: new THREE.SphereGeometry(0.6 * s, 10, 6).scale(1.7, 0.14, 0.75).rotateZ(side * 0.35).translate(x + side * 0.95 * s, 0.32 * s, z), color: wing });
+    }
+  }
+  return { bodies: mergeColored(THREE, bodies), wings: mergeColored(THREE, wings) };
+}
+
+export function makeFlock(THREE, geos, material) {
+  const flock = new THREE.Group();
+  flock.add(new THREE.Mesh(geos.bodies, material));
+  const wings = new THREE.Mesh(geos.wings, material);
+  flock.add(wings);
+  const phase = Math.random() * 6;
+  // Appelé à chaque image par World (obstacles mobiles) : battement d'ailes
+  flock.userData.animate = (t) => { wings.scale.y = Math.sin(t * 11 + phase) * 1.1; };
+  return flock;
+}

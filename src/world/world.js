@@ -100,6 +100,7 @@ export class World {
     for (const row of this.rows.values()) row.position.x = gx;
 
     this.time += dt;
+    for (const [name, assets] of this.assets) getTheme(name).animate?.(assets, this.time); // ex. vagues
     this.updateMovers(dt);
     this.updateAtmosphere(playerZ, Math.min(1, dt * 0.8), dt);
   }
@@ -111,6 +112,7 @@ export class World {
         const x = m.x0 + Math.sin(this.time * m.speed + m.phase) * m.amplitude;
         m.object.position.x = x;
         m.collider.x = x;
+        m.object.userData.animate?.(this.time); // ex. battement d'ailes
       }
     }
   }

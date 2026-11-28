@@ -1,7 +1,7 @@
 // Tous les réglages du jeu. Modifier ICI plutôt que dans le code.
 export const CONFIG = {
   stages: {
-    order: ['forest', 'country', 'canyon', 'snow', 'city'], // ordre des mondes en mode Aventure (puis ça boucle)
+    order: ['forest', 'country', 'ocean', 'canyon', 'snow', 'city'], // ordre des mondes en mode Aventure (puis ça boucle)
     chunks: 20,              // longueur d'une étape, en tronçons (20 × 60 = 1200 m)
   },
 
