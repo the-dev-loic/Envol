@@ -13,6 +13,11 @@ On va à gauche/droite en inclinant le téléphone. Collision avec un obstacle =
 Modes : **Aventure** (étapes de 1200 m : Forêt → Campagne → Canyon → Neige → Ville, puis boucle) ou **un seul monde** à l'infini.
 Record séparé par mode (localStorage `birdrun.best.<mode>`).
 
+## Gérer le jeu sans coder
+- **Page de contrôle** : https://the-dev-loic.github.io/Envol/admin.html (fichier `admin.html`, autonome). Avec un jeton GitHub *fine-grained* (dépôt Envol, Contents R/W, Pages R) gardé dans le navigateur, elle :
+  modifie `reglages.json` (commit), crée des **versions** (GitHub Releases), **remet en ligne** une version ou un commit (nouveau commit = arbre de la version + `admin.html` actuel conservé), affiche l'état de publication Pages.
+- **`reglages.json`** (racine) : réglages en unités humaines (km/h, m, h, %), lus au démarrage par `src/settings.js` et appliqués par-dessus `CONFIG`. Tout nouveau réglage « pour l'utilisateur » : l'ajouter dans `reglages.json`, `settings.js` (conversion + bornes) et `SCHEMA` de `admin.html`.
+
 ## Stack (aucune étape de build)
 - HTML + JS modules natifs + Three.js r187 dans `vendor/` (importmap `"three"` dans index.html).
 - PWA : `manifest.webmanifest` + `sw.js` → installable via Safari « Sur l'écran d'accueil » et **jouable sans connexion** (tous les fichiers pré-téléchargés ; réseau d'abord avec délai de 2,5 s, sinon cache).
@@ -25,7 +30,10 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | Fichier | Rôle | Toucher pour… |
 |---|---|---|
 | `src/config.js` | **Tous les réglages** (vitesse, sensibilité, largeur, hauteur…) | équilibrage, ressenti |
-| `src/main.js` | Point d'entrée, boutons, service worker | rarement |
+| `src/main.js` | Point d'entrée : charge `reglages.json`, crée le jeu, boutons, clavier, style, service worker | rarement |
+| `src/settings.js` | Lit `reglages.json` et l'applique à `CONFIG` (conversion d'unités, bornes) | nouveaux réglages |
+| `src/ui/looks.js` | **7 styles graphiques** (Dessin animé, Pastel, Néon, Pixel, Rétro, BD, Aquarelle) : filtre CSS du canvas, résolution (pixel), tons d'ombrage, calque `#overlay`, nuit figée. Choix mémorisé `birdrun.look` | nouveaux styles |
+| `admin.html` | Page de contrôle (réglages, versions, historique, publication) via l'API GitHub | gestion du jeu |
 | `src/core/game.js` | Boucle, états `menu/playing/over`, mode, bannière d'étape, collisions, recentrage | règles du jeu, nouveaux états |
 | `src/core/orientation.js` | Garde le jeu en **paysage** : si l'écran est en portrait, `#app` est tourné de -90° (`viewportSize()` = taille paysage, `gameAngle()` = 90/-90) | orientation |
 | `src/core/rng.js` | Aléatoire déterministe par tronçon | — |
@@ -35,14 +43,14 @@ Record séparé par mode (localStorage `birdrun.best.<mode>`).
 | `src/world/stages.js` | Plan de partie : thème + n° d'étape pour chaque tronçon | modes, enchaînement des étapes |
 | `src/world/sky.js` | Ciel en dégradé, **soleil qui sourit / lune qui dort** (textures canvas), **gros nuages** (1 objet, motif répété), étoiles, **cycle jour/nuit**, **météo** (beau, brouillard, pluie / neige), précipitations. `world.sky.set({time, weather})` pour tester | ambiance, météo |
 | `src/world/ground.js` | Sol : `groundMaterial()` (texture procédurale sans image) + petits détails `detail.*` / `sowDetails()` (touffes, fleurs, cailloux, champignons, cactus…) | rendu du sol |
-| `src/world/style.js` | **Matériaux cartoon** : `toon()` / `toonColors()` (MeshToonMaterial + dégradé 3 tons). Ne plus utiliser MeshLambert/Standard | rendu, style |
+| `src/world/style.js` | **Matériaux cartoon** : `toon()` / `toonColors()` (MeshToonMaterial + dégradé 3 tons, modifiable par `setShadingTones`). Ne plus utiliser MeshLambert/Standard | rendu, style |
 | `src/world/cute.js` | Pièces mignonnes réutilisables : `lollipopTree`, `stackPine`, `mushroom` (à pois), `bigFlower`, `roundRock`, `snowman`, `penguin`, `cactus` | décor enfantin |
 | `src/world/merge.js` | `mergeColored()` : fusionne des pièces colorées en 1 géométrie (1 appel de rendu par tronçon) | décor riche (ville, campagne) |
 | `src/world/obstacles.js` | Briques pour les thèmes : `scatter`, `density`, `wallWithGap`, `instances`, `mover` ; **chemin sûr** `setLaneSeed`/`safeX`/`laneX`/`laneInTile`/`isFree` | nouveaux types d'obstacles |
 | `src/world/themes/*.js` | **Contenu d'un monde** : forest, country (granges à traverser, moulins, animaux), canyon (mesas), snow (montagnes), city (quadrillage d'avenues tous les 40 m + rues transversales) | nouveaux mondes |
 | `src/world/themes/index.js` | Registre des thèmes | ajouter un thème |
 | `src/ui/hud.js` + `index.html` + `styles.css` | Menu (choix du mode, commandes, état hors connexion), score, bannière, fin, records | interface |
-| `sw.js` + `tools/update-sw.py` | Hors connexion : cache complet du jeu (revalidation `no-cache`) + génère `src/version.js` | ajout de fichiers (relancer le script) |
+| `sw.js` + `tools/update-sw.py` | Hors connexion : cache complet du jeu (+ `reglages.json`, sans `admin.html`), revalidation `no-cache` ; génère `src/version.js` | ajout de fichiers (relancer le script) |
 
 ## Contrat d'un thème (pour « modifier le monde »)
 ```js

@@ -1,5 +1,10 @@
 // Point d'entrée : crée le jeu, branche les boutons, enregistre le service worker.
-import { Game } from './core/game.js';
+import { loadSettings, SETTINGS } from './settings.js';
+import { LOOKS, LOOK_ORDER, applyLook } from './ui/looks.js';
+
+// Réglages de reglages.json (modifiables depuis la page de contrôle) AVANT de créer le jeu.
+await loadSettings();
+const { Game } = await import('./core/game.js');
 import { hud } from './ui/hud.js';
 import { VERSION } from './version.js';
 import { isTouchDevice } from './core/orientation.js';
@@ -12,6 +17,19 @@ try {
   const game = new Game(document.getElementById('game'));
   window.__game = game; // debug console
   hud.buildMenu((mode) => game.start(mode));
+
+  // --- Style graphique (choix du joueur, sinon celui des réglages) ---
+  let look = localStorage.getItem('birdrun.look') || SETTINGS.style || 'cartoon';
+  if (!LOOKS[look]) look = 'cartoon';
+  const lookBtn = document.getElementById('look');
+  const showLook = () => { const l = applyLook(game, look); lookBtn.textContent = `${l.icon} Style : ${l.label}`; };
+  showLook();
+  lookBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    look = LOOK_ORDER[(LOOK_ORDER.indexOf(look) + 1) % LOOK_ORDER.length];
+    localStorage.setItem('birdrun.look', look);
+    showLook();
+  });
   document.getElementById('again').addEventListener('click', (e) => { e.stopPropagation(); game.start(); });
   const ctrl = document.getElementById('control');
   const showControl = () => { ctrl.textContent = getControl() === 'tilt' ? 'Commandes : inclinaison' : 'Commandes : toucher gauche/droite'; };

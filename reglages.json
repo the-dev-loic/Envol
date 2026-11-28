@@ -1,0 +1,30 @@
+{
+  "style": "cartoon",
+  "vitesse": {
+    "departKmh": 79,
+    "maxKmh": 342,
+    "accelerationKmhParSeconde": 3.2
+  },
+  "inclinaison": {
+    "angleMaxDegres": 22,
+    "zoneMorteDegres": 1.5,
+    "vitesseLaterale": 20
+  },
+  "etapes": {
+    "ordre": ["forest", "country", "canyon", "snow", "city"],
+    "longueurMetres": 1200
+  },
+  "difficulte": {
+    "distanceMaxMetres": 6000
+  },
+  "jour": {
+    "dureeSecondes": 240,
+    "heureDepart": 9
+  },
+  "meteo": {
+    "beauTemps": 50,
+    "brouillard": 20,
+    "pluie": 30,
+    "premierChangementSecondes": 35
+  }
+}

@@ -9,8 +9,9 @@ root = pathlib.Path(__file__).resolve().parent.parent
 exts = {'.js', '.html', '.css', '.png', '.webmanifest'}
 files = sorted(
     p for p in root.rglob('*')
-    if p.is_file() and p.suffix in exts and '.git' not in p.parts and 'tools' not in p.parts and p.name != 'sw.js'
-)
+    if p.is_file() and p.suffix in exts and '.git' not in p.parts and 'tools' not in p.parts
+    and p.name not in ('sw.js', 'admin.html')  # la page de contrôle n'a pas besoin d'être hors connexion
+) + [root / 'reglages.json']
 h = hashlib.sha1()
 for p in files:
     if p.name != 'version.js':  # généré ci-dessous, ne compte pas dans l'empreinte

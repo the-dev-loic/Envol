@@ -3,7 +3,7 @@
 // - Ensuite : on essaie le réseau (pour avoir la dernière version) avec un délai court,
 //   et sinon on sert la copie en cache → le jeu se lance en mode avion.
 // La liste FILES et la version CACHE sont générées par :  python3 tools/update-sw.py
-const CACHE = 'envol-5c3f32dab7';
+const CACHE = 'envol-b38f011921';
 const FILES = [
   './',
   './icons/icon-180.png',
@@ -18,7 +18,9 @@ const FILES = [
   './src/input/tilt.js',
   './src/main.js',
   './src/player/bird.js',
+  './src/settings.js',
   './src/ui/hud.js',
+  './src/ui/looks.js',
   './src/version.js',
   './src/world/cute.js',
   './src/world/ground.js',
@@ -37,6 +39,7 @@ const FILES = [
   './styles.css',
   './vendor/three.core.js',
   './vendor/three.module.js',
+  './reglages.json',
 ];
 const NETWORK_TIMEOUT = 2500; // ms : au-delà, on joue avec la copie locale
 

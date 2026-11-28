@@ -136,7 +136,8 @@ export class Sky {
   update(dt, base, speed) {
     const { cycle, weather: W } = CONFIG;
     // --- Heure ---
-    this.time = (this.time + dt / cycle.dayLength) % 1;
+    // forcedTime : un style graphique peut figer l'heure (ex. Néon = toujours la nuit)
+    this.time = this.forcedTime ?? (this.time + dt / cycle.dayLength) % 1;
     const a = (this.time - 0.25) * Math.PI * 2; // 6 h : lever, 12 h : zénith, 18 h : coucher
     // Course du soleil assez basse et devant le joueur : on le voit dans le ciel pendant le vol.
     this.sunDir.set(-Math.cos(a) * 0.8, Math.sin(a) * 0.42, -1).normalize();

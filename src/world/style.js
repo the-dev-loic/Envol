@@ -15,6 +15,13 @@ function gradientMap() {
   return gradient;
 }
 
+/** Change les 3 tons d'ombrage de TOUS les matériaux cartoon (utilisé par les styles graphiques). */
+export function setShadingTones(tones) {
+  const g = gradientMap();
+  g.image.data.set(tones);
+  g.needsUpdate = true;
+}
+
 /** Matériau cartoon. Options = celles de MeshToonMaterial (color, map, vertexColors, emissive…). */
 export function toon(options = {}) {
   return new THREE.MeshToonMaterial({ gradientMap: gradientMap(), ...options });

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Envol · Page de contrôle</title>
+  <style>
+    :root { --ink: #3b2e6e; --pink: #ff6fae; --blue: #4dabf7; --green: #2fb57a; --red: #e5484d; --bg: #f4f7ff; --card: #fff; --muted: #7a7299; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+    header { background: linear-gradient(90deg, #ff9ec7, #8fd3ff); padding: 18px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    header h1 { margin: 0; font-size: 26px; }
+    header .sp { flex: 1; }
+    main { max-width: 980px; margin: 0 auto; padding: 18px; display: grid; gap: 18px; }
+    .card { background: var(--card); border-radius: 18px; padding: 18px 20px; box-shadow: 0 4px 0 rgba(59, 46, 110, .12); }
+    .card h2 { margin: 0 0 12px; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px 22px; }
+    label { display: grid; gap: 4px; font-weight: 700; font-size: 14px; }
+    label small { font-weight: 500; color: var(--muted); }
+    input[type=number], input[type=text], input[type=password], select { font: inherit; padding: 8px 10px; border: 2px solid #d9d3f0; border-radius: 10px; background: #fff; color: var(--ink); }
+    input:focus, select:focus { outline: none; border-color: var(--blue); }
+    .range { display: flex; gap: 8px; align-items: center; } .range input[type=range] { flex: 1; } .range input[type=number] { width: 90px; }
+    button { font: inherit; font-weight: 800; border: 2px solid var(--ink); border-radius: 12px; padding: 8px 14px; background: #fff; color: var(--ink); cursor: pointer; box-shadow: 0 3px 0 var(--ink); }
+    button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+    button:disabled { opacity: .5; cursor: default; }
+    button.primary { background: var(--pink); color: #fff; }
+    button.danger { background: #ffe1e2; }
+    button.small { padding: 4px 10px; font-size: 13px; box-shadow: 0 2px 0 var(--ink); }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .muted { color: var(--muted); font-size: 14px; }
+    .ok { color: var(--green); font-weight: 700; } .err { color: var(--red); font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    td, th { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee9fb; vertical-align: middle; }
+    th { color: var(--muted); font-weight: 700; }
+    code { background: #f0ecff; padding: 1px 6px; border-radius: 6px; }
+    .order { display: grid; gap: 6px; }
+    .order .item { display: flex; align-items: center; gap: 8px; background: #f7f5ff; border-radius: 10px; padding: 6px 10px; }
+    .order .item span { flex: 1; font-weight: 700; }
+    .order .item.off span { opacity: .45; text-decoration: line-through; }
+    #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 700; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    #toast.show { opacity: 1; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #e8f9f0; color: var(--green); font-weight: 800; font-size: 13px; }
+    .badge.wait { background: #fff4d6; color: #b07a00; } .badge.bad { background: #ffe1e2; color: var(--red); }
+    ol { margin: 6px 0 0; padding-left: 20px; } ol li { margin: 4px 0; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🐦 Envol · Page de contrôle</h1>
+  <span class="sp"></span>
+  <span class="muted" style="color:#3b2e6e">En ligne : <b id="liveVersion">…</b></span>
+  <a href="./" target="_blank"><button class="small">▶ Ouvrir le jeu</button></a>
+</header>
+
+<main>
+  <!-- ===================== Connexion ===================== -->
+  <section class="card" id="loginCard">
+    <h2>🔑 Connexion à GitHub</h2>
+    <p class="muted">Cette page modifie ton dépôt <b id="repoName"></b> à ta place. Il lui faut un <b>jeton GitHub</b> (une sorte de mot de passe limité à ce dépôt). Il reste enregistré <b>uniquement dans ce navigateur</b>, sur ton PC.</p>
+    <details>
+      <summary><b>Comment créer le jeton (une seule fois, 2 minutes)</b></summary>
+      <ol>
+        <li>Ouvre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">github.com › Settings › Fine-grained tokens › Generate new token</a>.</li>
+        <li><b>Token name</b> : <code>Envol admin</code> · <b>Expiration</b> : au choix (ex. 1 an).</li>
+        <li><b>Repository access</b> : <i>Only select repositories</i> → choisis <code>Envol</code>.</li>
+        <li><b>Permissions › Repository permissions</b> : <code>Contents</code> = <i>Read and write</i>, et <code>Pages</code> = <i>Read-only</i>.</li>
+        <li>Clique <b>Generate token</b>, copie le jeton (<code>github_pat_…</code>) et colle-le ci-dessous.</li>
+      </ol>
+    </details>
+    <div class="row" style="margin-top:12px">
+      <input type="password" id="token" placeholder="github_pat_…" style="flex:1;min-width:260px" autocomplete="off">
+      <button class="primary" id="loginBtn">Se connecter</button>
+    </div>
+    <p class="muted">⚠️ N'utilise pas cette page sur un ordinateur partagé.</p>
+    <p id="loginMsg"></p>
+  </section>
+
+  <!-- ===================== Réglages ===================== -->
+  <section class="card" id="settingsCard" hidden>
+    <h2>⚙️ Réglages du jeu <span class="sp"></span></h2>
+    <p class="muted">Modifie, puis « Enregistrer sur GitHub ». Le jeu en ligne est mis à jour en 1 à 2 minutes (fichier <code>reglages.json</code>).</p>
+    <div id="settingsForm"></div>
+    <div class="row" style="margin-top:16px">
+      <input type="text" id="settingsMsg" placeholder="Note pour l'historique (facultatif) : ex. « plus rapide »" style="flex:1;min-width:240px">
+      <button class="primary" id="saveSettings">💾 Enregistrer sur GitHub</button>
+      <button id="resetSettings">↩︎ Annuler mes changements</button>
+    </div>
+  </section>
+
+  <!-- ===================== Publication ===================== -->
+  <section class="card" id="deployCard" hidden>
+    <h2>🚀 Publication</h2>
+    <p>Dernière mise en ligne : <span id="deployStatus" class="badge wait">…</span> <span id="deployWhen" class="muted"></span></p>
+    <p class="muted">Chaque enregistrement ou remise en ligne d'une version déclenche une publication automatique sur GitHub Pages.</p>
+  </section>
+
+  <!-- ===================== Versions ===================== -->
+  <section class="card" id="versionsCard" hidden>
+    <h2>🏷️ Versions</h2>
+    <p class="muted">Une <b>version</b> est une photo du jeu à un moment donné. Tu peux en créer une avant de faire des essais, et remettre en ligne n'importe quelle version plus tard (rien n'est jamais effacé : l'historique garde tout).</p>
+    <div class="row" style="margin:10px 0 14px">
+      <input type="text" id="newTag" placeholder="Nom : ex. v1.0" style="width:160px">
+      <input type="text" id="newTagNote" placeholder="Description : ex. « version avec les 6 styles »" style="flex:1;min-width:220px">
+      <button class="primary" id="createVersion">📸 Créer une version du jeu actuel</button>
+    </div>
+    <table>
+      <thead><tr><th>Version</th><th>Date</th><th>Description</th><th></th></tr></thead>
+      <tbody id="versionsList"><tr><td colspan="4" class="muted">Chargement…</td></tr></tbody>
+    </table>
+  </section>
+
+  <!-- ===================== Historique ===================== -->
+  <section class="card" id="historyCard" hidden>
+    <h2>🕘 Historique des modifications</h2>
+    <p class="muted">Les 20 dernières modifications du dépôt. « Revenir ici » remet le jeu tel qu'il était à ce moment (en ajoutant une nouvelle modification : on peut toujours revenir en arrière).</p>
+    <table>
+      <thead><tr><th>Date</th><th>Modification</th><th></th></tr></thead>
+      <tbody id="historyList"></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="logoutCard" hidden>
+    <div class="row"><span class="muted">Connecté au dépôt <b id="repoName2"></b> en tant que <b id="userName"></b>.</span><span class="sp" style="flex:1"></span><button class="small danger" id="logoutBtn">Se déconnecter (oublier le jeton)</button></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+// =====================================================================
+// Envol · Page de contrôle
+// Parle directement à l'API GitHub avec le jeton de l'utilisateur (gardé dans ce navigateur).
+//  - Réglages : lit / écrit reglages.json (le jeu le lit au démarrage, voir src/settings.js)
+//  - Versions : liste et crée des « releases » GitHub ; remet en ligne une version
+//  - Historique : derniers commits, retour à un commit
+// Remettre une ancienne version = nouveau commit sur main dont le contenu est celui de la version
+// (on garde toujours admin.html actuel pour ne jamais perdre cette page).
+// =====================================================================
+const REPO = localStorage.getItem('envolAdmin.repo') || 'the-dev-loic/Envol';
+const BRANCH = 'main';
+const API = `https://api.github.com/repos/${REPO}`;
+let token = localStorage.getItem('envolAdmin.token') || '';
+let settings = null, settingsSha = null, original = null;
+
+const $ = (id) => document.getElementById(id);
+const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 3200); };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtDate = (d) => new Date(d).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' });
+$('repoName').textContent = $('repoName2').textContent = REPO;
+
+async function gh(path, options = {}) {
+  const res = await fetch(path.startsWith('http') ? path : API + path, {
+    ...options,
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(options.body ? { 'Content-Type': 'application/json' } : {}) },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  if (!res.ok) {
+    let msg = `${res.status}`;
+    try { msg += ' · ' + (await res.json()).message; } catch {}
+    const e = new Error(msg); e.status = res.status; throw e;
+  }
+  return res.status === 204 ? null : res.json();
+}
+const b64decode = (s) => decodeURIComponent(escape(atob(s.replace(/\n/g, ''))));
+const b64encode = (s) => btoa(unescape(encodeURIComponent(s)));
+
+// ---------------------------------------------------------------- Version en ligne
+async function showLiveVersion() {
+  try {
+    const t = await (await fetch('./src/version.js', { cache: 'no-store' })).text();
+    $('liveVersion').textContent = (t.match(/VERSION = '([^']+)'/) || [, '?'])[1];
+  } catch { $('liveVersion').textContent = '?'; }
+}
+
+// ---------------------------------------------------------------- Connexion
+async function login() {
+  $('loginMsg').innerHTML = 'Connexion…';
+  try {
+    const repo = await gh('');
+    if (!repo.permissions?.push) throw new Error('Ce jeton ne peut pas modifier le dépôt (il faut « Contents : Read and write »).');
+    let user = '';
+    try { user = (await gh('https://api.github.com/user')).login; } catch { user = repo.owner.login; }
+    localStorage.setItem('envolAdmin.token', token);
+    $('userName').textContent = user;
+    $('loginCard').hidden = true;
+    for (const id of ['settingsCard', 'deployCard', 'versionsCard', 'historyCard', 'logoutCard']) $(id).hidden = false;
+    await Promise.all([loadSettings(), loadVersions(), loadHistory(), loadDeploy()]);
+  } catch (e) {
+    $('loginMsg').innerHTML = `<span class="err">Connexion impossible : ${esc(e.message)}</span><br><span class="muted">Vérifie le jeton et ses permissions (dépôt Envol, Contents : Read and write).</span>`;
+    $('loginCard').hidden = false;
+  }
+}
+$('loginBtn').onclick = () => { token = $('token').value.trim(); if (token) login(); };
+$('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+$('logoutBtn').onclick = () => { localStorage.removeItem('envolAdmin.token'); location.reload(); };
+
+// ---------------------------------------------------------------- Réglages
+const THEMES = { forest: '🌳 Forêt', country: '🐄 Campagne', canyon: '🌵 Canyon', snow: '⛄ Montagnes enneigées', city: '🏙️ Ville' };
+const LOOKS = { cartoon: '🎨 Dessin animé', pastel: '🍬 Pastel', neon: '🌃 Néon', pixel: '👾 Pixel', retro: '📜 Rétro', comic: '✏️ BD', watercolor: '🖌️ Aquarelle' };
+const SCHEMA = [
+  { title: '🎨 Style graphique', fields: [
+    { key: 'style', label: 'Style par défaut', help: 'Celui qu’on voit tant que le joueur n’en a pas choisi un autre dans le menu.', type: 'select', options: LOOKS },
+  ] },
+  { title: '🏎️ Vitesse', fields: [
+    { key: 'vitesse.departKmh', label: 'Vitesse au départ', unit: 'km/h', min: 30, max: 250, step: 1 },
+    { key: 'vitesse.maxKmh', label: 'Vitesse maximale', unit: 'km/h', min: 60, max: 500, step: 1 },
+    { key: 'vitesse.accelerationKmhParSeconde', label: 'Accélération', unit: 'km/h gagnés par seconde', min: 0, max: 15, step: 0.1 },
+  ] },
+  { title: '🎮 Commandes', fields: [
+    { key: 'inclinaison.angleMaxDegres', label: 'Inclinaison pour tourner à fond', unit: '° (petit = très sensible)', min: 8, max: 45, step: 0.5 },
+    { key: 'inclinaison.zoneMorteDegres', label: 'Zone morte', unit: '° sans effet autour du « tout droit »', min: 0, max: 8, step: 0.1 },
+    { key: 'inclinaison.vitesseLaterale', label: 'Vitesse sur les côtés', unit: 'm/s', min: 8, max: 45, step: 0.5 },
+  ] },
+  { title: '🗺️ Aventure', fields: [
+    { key: 'etapes.ordre', label: 'Ordre des mondes', help: 'Décoche un monde pour le retirer de l’Aventure.', type: 'order', options: THEMES },
+    { key: 'etapes.longueurMetres', label: 'Longueur d’une étape', unit: 'm', min: 300, max: 5000, step: 60 },
+    { key: 'difficulte.distanceMaxMetres', label: 'Distance pour atteindre la difficulté max', unit: 'm', min: 1200, max: 30000, step: 60 },
+  ] },
+  { title: '🌦️ Jour et météo', fields: [
+    { key: 'jour.dureeSecondes', label: 'Durée d’une journée complète', unit: 's', min: 30, max: 1800, step: 10 },
+    { key: 'jour.heureDepart', label: 'Heure au début de la partie', unit: 'h', min: 0, max: 23.5, step: 0.5 },
+    { key: 'meteo.beauTemps', label: 'Chance de beau temps', unit: '%', min: 0, max: 100, step: 1 },
+    { key: 'meteo.brouillard', label: 'Chance de brouillard', unit: '%', min: 0, max: 100, step: 1 },
+    { key: 'meteo.pluie', label: 'Chance de pluie / neige', unit: '%', min: 0, max: 100, step: 1 },
+    { key: 'meteo.premierChangementSecondes', label: 'Beau temps garanti au départ', unit: 's', min: 0, max: 300, step: 5 },
+  ] },
+];
+const getK = (o, k) => k.split('.').reduce((a, p) => a?.[p], o);
+const setK = (o, k, v) => { const ps = k.split('.'); let a = o; ps.slice(0, -1).forEach((p) => { a = a[p] ??= {}; }); a[ps.at(-1)] = v; };
+
+async function loadSettings() {
+  try {
+    const f = await gh(`/contents/reglages.json?ref=${BRANCH}`);
+    settingsSha = f.sha;
+    settings = JSON.parse(b64decode(f.content));
+  } catch (e) {
+    if (e.status !== 404) throw e;
+    settings = {}; settingsSha = null;
+  }
+  original = JSON.stringify(settings);
+  renderSettings();
+}
+
+function renderSettings() {
+  const root = $('settingsForm');
+  root.innerHTML = '';
+  for (const sec of SCHEMA) {
+    const h = document.createElement('h3'); h.textContent = sec.title; h.style.margin = '18px 0 8px';
+    const grid = document.createElement('div'); grid.className = 'grid';
+    for (const f of sec.fields) grid.append(fieldEl(f));
+    root.append(h, grid);
+  }
+}
+
+function fieldEl(f) {
+  const wrap = document.createElement('label');
+  wrap.innerHTML = `${esc(f.label)}${f.unit ? ` <small>(${esc(f.unit)})</small>` : ''}${f.help ? `<small>${esc(f.help)}</small>` : ''}`;
+  const val = getK(settings, f.key);
+  if (f.type === 'select') {
+    const s = document.createElement('select');
+    for (const [k, l] of Object.entries(f.options)) s.add(new Option(l, k, false, k === (val ?? 'cartoon')));
+    s.onchange = () => setK(settings, f.key, s.value);
+    wrap.append(s);
+  } else if (f.type === 'order') {
+    const list = document.createElement('div'); list.className = 'order';
+    const all = [...(val ?? Object.keys(f.options)), ...Object.keys(f.options).filter((k) => !(val ?? []).includes(k))];
+    const on = new Set(val ?? Object.keys(f.options));
+    const draw = () => {
+      list.innerHTML = '';
+      all.forEach((k, i) => {
+        const it = document.createElement('div'); it.className = 'item' + (on.has(k) ? '' : ' off');
+        it.innerHTML = `<input type="checkbox" ${on.has(k) ? 'checked' : ''}><span>${i + 1}. ${esc(f.options[k])}</span><button class="small" type="button">▲</button><button class="small" type="button">▼</button>`;
+        const [cb, , up, down] = it.children;
+        cb.onchange = () => { cb.checked ? on.add(k) : on.delete(k); if (!on.size) { on.add(k); cb.checked = true; } sync(); draw(); };
+        up.onclick = (e) => { e.preventDefault(); if (i > 0) { [all[i - 1], all[i]] = [all[i], all[i - 1]]; sync(); draw(); } };
+        down.onclick = (e) => { e.preventDefault(); if (i < all.length - 1) { [all[i + 1], all[i]] = [all[i], all[i + 1]]; sync(); draw(); } };
+        list.append(it);
+      });
+    };
+    const sync = () => setK(settings, f.key, all.filter((k) => on.has(k)));
+    draw();
+    wrap.append(list);
+  } else {
+    const row = document.createElement('div'); row.className = 'range';
+    const r = Object.assign(document.createElement('input'), { type: 'range', min: f.min, max: f.max, step: f.step, value: val ?? f.min });
+    const n = Object.assign(document.createElement('input'), { type: 'number', min: f.min, max: f.max, step: f.step, value: val ?? '' });
+    r.oninput = () => { n.value = r.value; setK(settings, f.key, Number(r.value)); };
+    n.oninput = () => { if (n.value !== '') { r.value = n.value; setK(settings, f.key, Number(n.value)); } };
+    row.append(r, n);
+    wrap.append(row);
+  }
+  return wrap;
+}
+
+$('saveSettings').onclick = async () => {
+  if (JSON.stringify(settings) === original) return toast('Aucun changement à enregistrer.');
+  const btn = $('saveSettings'); btn.disabled = true;
+  try {
+    const note = $('settingsMsg').value.trim();
+    const res = await gh('/contents/reglages.json', { method: 'PUT', body: {
+      message: `Réglages${note ? ' : ' + note : ''} (page de contrôle)`,
+      content: b64encode(JSON.stringify(settings, null, 2) + '\n'),
+      sha: settingsSha ?? undefined, branch: BRANCH,
+    } });
+    settingsSha = res.content.sha; original = JSON.stringify(settings);
+    $('settingsMsg').value = '';
+    toast('✅ Réglages enregistrés. Le jeu se met à jour dans 1-2 minutes.');
+    loadHistory(); setTimeout(loadDeploy, 4000);
+  } catch (e) {
+    toast('❌ ' + e.message);
+    if (e.status === 409) loadSettings();
+  } finally { btn.disabled = false; }
+};
+$('resetSettings').onclick = () => { settings = JSON.parse(original); renderSettings(); toast('Changements annulés.'); };
+
+// ---------------------------------------------------------------- Publication
+async function loadDeploy() {
+  const s = $('deployStatus');
+  try {
+    const b = await gh('/pages/builds/latest');
+    const map = { built: ['En ligne ✓', ''], building: ['Publication en cours…', 'wait'], queued: ['En attente…', 'wait'], errored: ['Erreur', 'bad'] };
+    const [txt, cls] = map[b.status] ?? [b.status, 'wait'];
+    s.textContent = txt; s.className = 'badge ' + cls;
+    $('deployWhen').textContent = b.updated_at ? '· ' + fmtDate(b.updated_at) : '';
+    if (b.status === 'building' || b.status === 'queued') setTimeout(loadDeploy, 8000);
+    else showLiveVersion();
+  } catch {
+    s.textContent = 'statut indisponible'; s.className = 'badge wait';
+    $('deployWhen').textContent = '(ajoute la permission « Pages : Read-only » au jeton pour le voir)';
+  }
+}
+
+// ---------------------------------------------------------------- Versions
+async function loadVersions() {
+  const tb = $('versionsList');
+  try {
+    const [rels, tags] = await Promise.all([gh('/releases?per_page=50'), gh('/tags?per_page=100')]);
+    const sha = Object.fromEntries(tags.map((t) => [t.name, t.commit.sha]));
+    const rows = rels.map((r) => ({ name: r.tag_name, date: r.created_at, note: r.body || r.name, sha: sha[r.tag_name] }));
+    for (const t of tags) if (!rels.some((r) => r.tag_name === t.name)) rows.push({ name: t.name, date: null, note: '', sha: t.commit.sha });
+    tb.innerHTML = rows.length ? '' : '<tr><td colspan="4" class="muted">Aucune version pour l’instant.</td></tr>';
+    for (const v of rows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${esc(v.name)}</b></td><td>${v.date ? fmtDate(v.date) : '—'}</td><td>${esc(v.note)}</td><td><button class="small">⏪ Remettre en ligne</button></td>`;
+      tr.querySelector('button').onclick = () => restore(v.sha, `la version ${v.name}`);
+      tb.append(tr);
+    }
+  } catch (e) { tb.innerHTML = `<tr><td colspan="4" class="err">${esc(e.message)}</td></tr>`; }
+}
+
+$('createVersion').onclick = async () => {
+  const name = $('newTag').value.trim().replace(/\s+/g, '-');
+  if (!/^[\w.\-]+$/.test(name)) return toast('Donne un nom simple, ex. v1.0');
+  const btn = $('createVersion'); btn.disabled = true;
+  try {
+    await gh('/releases', { method: 'POST', body: { tag_name: name, target_commitish: BRANCH, name, body: $('newTagNote').value.trim() || `Version ${name}` } });
+    $('newTag').value = $('newTagNote').value = '';
+    toast(`✅ Version ${name} créée.`);
+    loadVersions();
+  } catch (e) { toast('❌ ' + (e.status === 422 ? 'Ce nom de version existe déjà.' : e.message)); }
+  finally { btn.disabled = false; }
+};
+
+// ---------------------------------------------------------------- Historique
+async function loadHistory() {
+  const tb = $('historyList');
+  try {
+    const commits = await gh(`/commits?sha=${BRANCH}&per_page=20`);
+    tb.innerHTML = '';
+    commits.forEach((c, i) => {
+      const tr = document.createElement('tr');
+      const title = c.commit.message.split('\n')[0];
+      tr.innerHTML = `<td>${fmtDate(c.commit.author.date)}</td><td>${esc(title)}</td><td>${i === 0 ? '<span class="badge">actuelle</span>' : '<button class="small">⏪ Revenir ici</button>'}</td>`;
+      if (i) tr.querySelector('button').onclick = () => restore(c.sha, `l’état du ${fmtDate(c.commit.author.date)}`);
+      tb.append(tr);
+    });
+  } catch (e) { tb.innerHTML = `<tr><td colspan="3" class="err">${esc(e.message)}</td></tr>`; }
+}
+
+// ---------------------------------------------------------------- Remettre une version en ligne
+async function restore(targetSha, label) {
+  if (!targetSha) return toast('Version introuvable.');
+  if (!confirm(`Remettre en ligne ${label} ?\n\nLe jeu redeviendra comme à ce moment-là (réglages compris).\nRien n'est effacé : tu pourras revenir à la version actuelle depuis l'historique.`)) return;
+  try {
+    toast('⏳ Remise en ligne…');
+    const head = (await gh(`/git/ref/heads/${BRANCH}`)).object.sha;
+    const target = await gh(`/git/commits/${targetSha}`);
+    // Toujours garder la page de contrôle actuelle (une vieille version n'en avait peut-être pas)
+    const admin = await gh(`/contents/admin.html?ref=${BRANCH}`);
+    const tree = await gh('/git/trees', { method: 'POST', body: { base_tree: target.tree.sha, tree: [{ path: 'admin.html', mode: '100644', type: 'blob', sha: admin.sha }] } });
+    const commit = await gh('/git/commits', { method: 'POST', body: { message: `Remise en ligne de ${label} (page de contrôle)`, tree: tree.sha, parents: [head] } });
+    await gh(`/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: commit.sha } });
+    toast('✅ C’est fait ! Le jeu se met à jour dans 1-2 minutes.');
+    await Promise.all([loadSettings(), loadHistory()]);
+    setTimeout(loadDeploy, 4000);
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ---------------------------------------------------------------- Démarrage
+showLiveVersion();
+if (token) { $('token').value = token; login(); }
+</script>
+</body>
+</html>

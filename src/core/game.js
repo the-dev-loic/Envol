@@ -44,6 +44,7 @@ export class Game {
   resize() {
     applyLandscape();
     const { w, h } = viewportSize();
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * (this.pixelScale ?? 1));
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
